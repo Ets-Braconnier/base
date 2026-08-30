@@ -111,12 +111,42 @@ function smartMatch(query,text){
  return qs.every(q=>ws.some(w=>wordClose(q,w)));
 }
 const ARTICLE_SEARCH_COLS=[0,1,2,4,5,6,7,8,9];
-const PRODUCT_SEARCH_INDEX=DATA.map((x,ix)=>{
- const parts=[...(x.categories||[])];
+const PRODUCT_SEARCH_UNITS=DATA.map((x,ix)=>{
+ const units=[];
+ // Chaque catégorie est une unité indépendante.
+ for(const c of (x.categories||[])) if(c) units.push(c);
+
+ // Chaque ligne article est une unité indépendante.
+ // On regroupe les colonnes utiles d'un même article ensemble.
  const ar=ARTICLES[String(ix)]||[];
- for(const r of ar) for(const c of ARTICLE_SEARCH_COLS) if(r[c]) parts.push(r[c]);
- return parts.join(" ");
+ for(const r of ar){
+   const u=ARTICLE_SEARCH_COLS.map(c=>r[c]||"").join(" ");
+   if(u.trim()) units.push(u);
+ }
+ return units;
 });
+
+function productMatch(query,ix){
+ const raw=String(query||"").trim();
+ if(!raw)return true;
+
+ // Référence, EAN ou numéro article : recherche directe/partielle.
+ if(/\d/.test(raw)){
+   const nq=n(raw);
+   return PRODUCT_SEARCH_UNITS[ix].some(u=>n(u).includes(nq));
+ }
+
+ const qs=searchWords(raw);
+
+ // Un mot : recherche tolérante normale dans catégories et articles.
+ if(qs.length===1){
+   return PRODUCT_SEARCH_UNITS[ix].some(u=>smartMatch(raw,u));
+ }
+
+ // Plusieurs mots : ils doivent correspondre dans la MEME catégorie
+ // ou le MEME article. C'est le point important pour éviter les faux positifs.
+ return PRODUCT_SEARCH_UNITS[ix].some(u=>smartMatch(raw,u));
+}
 
 
 function updateKpis(){
@@ -149,7 +179,7 @@ function render(){
  const fqv=n(fq.value),pqv=n(pq.value),sqv=sq.value,iv=inactiveFilter.value,empty=emptyOnly.checked;
  let r=DATA.filter(x=>
    (!fqv||n(x.fournisseur_source+" "+x.nom_actuel).includes(fqv)) &&
-   (!pqv||smartMatch(pq.value,PRODUCT_SEARCH_INDEX[DATA.indexOf(x)])) &&
+   (!pqv||productMatch(pq.value,DATA.indexOf(x))) &&
    (!sqv||x.statut_source===sqv) &&
    (!iv||(x.statut_source==="Inactif confirmé / signalé" && x.type_inactif===iv)) &&
    (!empty||!x.categories||x.categories.length===0)
