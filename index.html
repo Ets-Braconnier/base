@@ -27,7 +27,78 @@ button{background:#1f4e78;color:#fff;border:0;cursor:pointer}.stats{margin-top:1
 .supplier-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.supplier-actions .article-btn{margin-top:0}.tariff-btn{border:0;border-radius:9px;padding:8px 13px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer}.tariff-btn:hover{filter:brightness(.94)}
 .article-actions{display:flex;gap:9px;align-items:center}
 @media(max-width:850px){.article-actions{width:100%}.article-actions button{flex:1}}
-</style></head><body><div class="wrap">
+
+/* ===== Page d'accueil sécurisée ===== */
+body.auth-locked .wrap,
+body.auth-locked #articleModal,
+body.auth-locked #tariffModal{display:none!important}
+#loginGate{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  padding:24px;
+  background:linear-gradient(135deg,#eef3f7 0%,#f8fafc 55%,#edf3f7 100%);
+}
+#loginGate[hidden]{display:none!important}
+.login-card{
+  width:min(440px,100%);
+  background:#fff;
+  border:1px solid #dce3e8;
+  border-radius:18px;
+  box-shadow:0 18px 55px rgba(31,78,120,.13);
+  padding:34px;
+  text-align:center;
+}
+.login-brand{
+  width:64px;height:64px;margin:0 auto 18px;
+  border-radius:16px;background:#1f4e78;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:800;letter-spacing:.5px;
+}
+.login-card h1{margin:0 0 8px;color:#1f4e78;font-size:27px}
+.login-card p{margin:0 0 22px;color:#667085;line-height:1.5}
+.login-field{text-align:left;margin-bottom:14px}
+.login-field label{display:block;font-size:13px;font-weight:700;color:#475467;margin-bottom:7px}
+.login-field input{
+  width:100%;box-sizing:border-box;padding:13px 14px;
+  border:1px solid #cbd4dc;border-radius:9px;font-size:16px;background:#fff;
+}
+.login-field input:focus{outline:2px solid rgba(31,78,120,.18);border-color:#1f4e78}
+.login-submit{
+  width:100%;padding:13px 16px;border:0;border-radius:9px;
+  background:#1f4e78;color:#fff;font-size:15px;font-weight:800;cursor:pointer;
+}
+.login-submit:disabled{opacity:.6;cursor:wait}
+.login-message{min-height:20px;margin-top:12px;font-size:13px;color:#8b1b1b}
+.login-note{margin-top:18px;font-size:12px;color:#98a2b3;line-height:1.45}
+.logout-btn{
+  position:fixed;right:18px;bottom:18px;z-index:50;
+  border:0;border-radius:9px;padding:10px 13px;background:#344054;color:#fff;
+  font-weight:700;cursor:pointer;box-shadow:0 5px 18px rgba(0,0,0,.12)
+}
+.logout-btn[hidden]{display:none!important}
+
+</style></head><body class="auth-locked">
+<div id="loginGate">
+  <div class="login-card">
+    <div class="login-brand">B</div>
+    <h1>Base fournisseur Braconnier</h1>
+    <p>Accès réservé. Entrez le mot de passe pour ouvrir la base fournisseurs.</p>
+    <form id="loginForm" autocomplete="off">
+      <div class="login-field">
+        <label for="loginPassword">Mot de passe</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required>
+      </div>
+      <button id="loginSubmit" class="login-submit" type="submit">Se connecter</button>
+      <div id="loginMessage" class="login-message" role="alert"></div>
+    </form>
+    <div class="login-note">Le mot de passe n'est pas enregistré dans cette page. Il est vérifié par le Worker Cloudflare.</div>
+  </div>
+</div>
+<button id="logoutBtn" class="logout-btn" type="button" hidden>Se déconnecter</button>
+<div class="wrap">
 <h1>Base fournisseur Braconnier</h1>
 <div class="kpis">
 <button class="kpi" id="filterAll" type="button" data-status=""><b id="kTotal">0</b><span>Tous les fournisseurs</span></button>
@@ -942,4 +1013,85 @@ async function loadSuppliersFromD1(){
  }catch(err){console.error("D1:",err);applyStoredData();rebuildProductSearchUnits();updateKpis();render();stats.textContent=DATA.length+" fournisseur(s) — API D1 inaccessible, données intégrées utilisées"}
 }
 loadSuppliersFromD1();
+
+// =====================================================
+// ACCÈS PAR MOT DE PASSE
+// Vérification sécurisée via le Worker Cloudflare.
+// Le mot de passe n'est jamais stocké dans le HTML.
+// =====================================================
+const LOGIN_SESSION_KEY="braconnier_authenticated_session_v1";
+const loginGate=document.getElementById("loginGate");
+const loginForm=document.getElementById("loginForm");
+const loginPassword=document.getElementById("loginPassword");
+const loginSubmit=document.getElementById("loginSubmit");
+const loginMessage=document.getElementById("loginMessage");
+const logoutBtn=document.getElementById("logoutBtn");
+
+function unlockApplication(){
+ document.body.classList.remove("auth-locked");
+ loginGate.hidden=true;
+ logoutBtn.hidden=false;
+}
+
+function lockApplication(){
+ document.body.classList.add("auth-locked");
+ loginGate.hidden=false;
+ logoutBtn.hidden=true;
+ loginPassword.value="";
+ loginMessage.textContent="";
+ setTimeout(()=>loginPassword.focus(),50);
+}
+
+async function verifySitePassword(password){
+ const response=await fetch(API_BASE+"/admin/test",{
+  method:"POST",
+  headers:{
+   "Content-Type":"application/json",
+   "X-Admin-Password":password
+  }
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok){
+  throw new Error(result.erreur||"Mot de passe incorrect.");
+ }
+ return true;
+}
+
+loginForm.addEventListener("submit",async e=>{
+ e.preventDefault();
+ const password=loginPassword.value;
+ if(!password)return;
+
+ loginSubmit.disabled=true;
+ loginSubmit.textContent="Vérification…";
+ loginMessage.textContent="";
+
+ try{
+  await verifySitePassword(password);
+  sessionStorage.setItem(LOGIN_SESSION_KEY,"1");
+  unlockApplication();
+ }catch(err){
+  console.error(err);
+  sessionStorage.removeItem(LOGIN_SESSION_KEY);
+  loginMessage.textContent=err.message||"Accès refusé.";
+  loginPassword.select();
+ }finally{
+  loginSubmit.disabled=false;
+  loginSubmit.textContent="Se connecter";
+ }
+});
+
+logoutBtn.addEventListener("click",()=>{
+ sessionStorage.removeItem(LOGIN_SESSION_KEY);
+ lockApplication();
+});
+
+// Une actualisation de la même session navigateur reste ouverte.
+// Fermer l'onglet / la session demandera à nouveau le mot de passe.
+if(sessionStorage.getItem(LOGIN_SESSION_KEY)==="1"){
+ unlockApplication();
+}else{
+ lockApplication();
+}
+
 </script></body></html>
