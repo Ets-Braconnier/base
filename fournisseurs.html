@@ -321,6 +321,7 @@ input,select,button{font-family:inherit}
   height:27px;padding:0 9px;border-radius:6px;border:0;font-size:9px;font-weight:800;
   text-decoration:none;display:flex;align-items:center;cursor:pointer
 }
+.file-open{background:#2d6b5e;color:#fff}
 .file-download{background:#217346;color:#fff}
 .file-delete{background:#a33b3b;color:#fff}
 .file-empty{background:#fff;border:1px solid #e1e5e9;border-radius:10px;padding:28px;text-align:center;color:#7a838d;font-size:11px}
@@ -1094,6 +1095,13 @@ async function loadSupplierFiles(){
   supplierFileList.innerHTML='<div class="file-empty">Impossible de charger les fichiers : '+safeText(err.message)+'</div>';
  }
 }
+function canPreviewSupplierFile(file){
+ const name=String(file?.name||"").toLowerCase();
+ const type=String(file?.contentType||"").toLowerCase();
+ if(type.startsWith("image/"))return true;
+ if(type==="application/pdf"||type.startsWith("text/"))return true;
+ return /\.(pdf|png|jpe?g|gif|webp|svg|bmp|txt|csv|log|json|xml)$/i.test(name);
+}
 function renderSupplierFiles(){
  const q=String(supplierFileSearch.value||"").trim().toLowerCase();
  const rows=currentSupplierFiles.filter(f=>!q||String(f.name||"").toLowerCase().includes(q));
@@ -1110,6 +1118,7 @@ function renderSupplierFiles(){
     <div><div class="file-name" title="${safeText(f.name)}">${safeText(f.name)}</div>
     <div class="file-meta">${safeText(fileSizeLabel(f.size))}${d?" · "+safeText(d):""}</div></div>
     <div class="file-buttons">
+      ${canPreviewSupplierFile(f)?`<button class="file-open" type="button" onclick="openSupplierFile('${key}')">Ouvrir</button>`:""}
       <button class="file-download" type="button" onclick="downloadSupplierFile('${key}')">Télécharger</button>
       <button class="file-delete" type="button" onclick="deleteSupplierFile('${key}', '${safeText(String(f.name||"").replace(/'/g,"&#39;"))}')">Supprimer</button>
     </div>
@@ -1147,6 +1156,28 @@ async function uploadSupplierFiles(files){
  await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
  setTimeout(()=>{uploadProgress.textContent=""},2500);
 }
+async function openSupplierFile(encodedKey){
+ const previewWindow=window.open("about:blank","_blank");
+ if(!previewWindow){alert("Le navigateur a bloqué l’ouverture du nouvel onglet. Autorisez les fenêtres pop-up pour ce site.");return}
+ try{
+  previewWindow.document.title="Chargement du document…";
+  previewWindow.document.body.innerHTML='<div style="font-family:Arial,sans-serif;padding:24px">Chargement du document…</div>';
+  const key=decodeURIComponent(encodedKey);
+  const r=await fetch(FILE_API+"/files/object?key="+encodeURIComponent(key),{
+   headers:{"Authorization":"Bearer "+portalToken()}
+  });
+  if(r.status===401){previewWindow.close();sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+  if(!r.ok){const j=await r.json().catch(()=>({}));previewWindow.close();alert(j.error||"Ouverture impossible.");return}
+  const blob=await r.blob();
+  const url=URL.createObjectURL(blob);
+  previewWindow.location.href=url;
+  setTimeout(()=>URL.revokeObjectURL(url),5*60*1000);
+ }catch(err){
+  previewWindow.close();
+  alert("Ouverture impossible : "+err.message);
+ }
+}
+
 async function downloadSupplierFile(encodedKey){
  const key=decodeURIComponent(encodedKey);
  const r=await fetch(FILE_API+"/files/object?key="+encodeURIComponent(key),{
