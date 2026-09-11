@@ -212,6 +212,17 @@ input,select,button{font-family:inherit}
 
 .back-netstore{height:29px;padding:0 11px;border-radius:6px;background:#f47b00;color:#fff!important;text-decoration:none;display:flex;align-items:center;font-size:9px;font-weight:800}
 .back-netstore:hover{background:#dc6f00}
+
+/* Stockage R2 */
+.storage-panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 10px;box-shadow:0 1px 4px rgba(0,0,0,.025)}
+.storage-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px;font-size:10px;color:#59636d}
+.storage-row strong{font-size:11px;color:var(--ink)}
+.storage-track{height:9px;background:#edf0f2;border-radius:999px;overflow:hidden}
+.storage-fill{height:100%;width:0;background:#1f7a4d;border-radius:999px;transition:width .25s ease,background .25s ease}
+.storage-panel.warning .storage-fill{background:#c88a00}
+.storage-panel.danger .storage-fill,.storage-panel.blocked .storage-fill{background:#a33b3b}
+.storage-note{font-size:9px;color:#7a838d;margin-top:6px}
+.storage-panel.blocked .storage-note{color:#a33b3b;font-weight:800}
 </style></head><body>
 <div class="wrap">
 <div class="app-header">
@@ -233,6 +244,14 @@ input,select,button{font-family:inherit}
 <button class="kpi" id="filterActive" type="button" data-status="Présence trouvée"><b id="kActive">0</b><span>Actifs vérifiés</span></button>
 <button class="kpi" id="filterChanged" type="button" data-status="Changement confirmé"><b id="kChanged">0</b><span>Reprises / changements confirmés</span></button>
 <button class="kpi" id="filterInactive" type="button" data-status="Inactif confirmé / signalé"><b id="kInactive">0</b><span>Inactifs confirmés</span></button>
+</div>
+<div id="storagePanel" class="storage-panel">
+  <div class="storage-row">
+    <strong>Stockage documents</strong>
+    <span id="storageText">Calcul du stockage…</span>
+  </div>
+  <div class="storage-track"><div id="storageFill" class="storage-fill"></div></div>
+  <div id="storageNote" class="storage-note">Limite de sécurité : 9,5 Go</div>
 </div>
 <div class="inactive-breakdown">
 <button class="mini-filter" type="button" data-inactive="Faillite">Faillites <b id="kBankrupt">0</b></button>
@@ -995,6 +1014,31 @@ const FILE_API="https://braconnier-auth.sebastien-025.workers.dev";
 let currentSupplierFiles=[];
 
 function portalToken(){return sessionStorage.getItem("braconnier_portal_token_v3")||""}
+let storageBlocked=false;
+async function loadStorageIndicator(){
+ try{
+  const r=await fetch(FILE_API+"/files/storage",{headers:{"Authorization":"Bearer "+portalToken()}});
+  if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok)throw new Error(j.error||"Stockage indisponible");
+  const pct=Math.max(0,Math.min(100,Number(j.percent||0)));
+  storageBlocked=Boolean(j.blocked);
+  storageText.textContent=(Number(j.usedGB||0)).toFixed(2).replace(".",",")+" Go / "+Number(j.limitGB||9.5).toFixed(1).replace(".",",")+" Go — "+pct.toFixed(1).replace(".",",")+" %";
+  storageFill.style.width=pct+"%";
+  storagePanel.classList.remove("warning","danger","blocked");
+  if(storageBlocked)storagePanel.classList.add("blocked");
+  else if(j.status==="danger")storagePanel.classList.add("danger");
+  else if(j.status==="warning")storagePanel.classList.add("warning");
+  storageNote.textContent=storageBlocked
+   ? "Limite atteinte : les nouveaux imports sont bloqués. Supprimez des documents pour libérer de l’espace."
+   : "Espace restant : "+(Number(j.remainingGB||0)).toFixed(2).replace(".",",")+" Go · Blocage automatique à 9,5 Go";
+  if(window.supplierFileInput)supplierFileInput.disabled=storageBlocked;
+ }catch(err){
+  console.error("Stockage R2:",err);
+  storageText.textContent="Indicateur indisponible";
+  storageNote.textContent="Le contrôle serveur à 9,5 Go reste actif.";
+ }
+}
 function fileSizeLabel(n){
  n=Number(n||0); if(n<1024)return n+" o";
  if(n<1024*1024)return (n/1024).toFixed(n<10240?1:0)+" Ko";
@@ -1017,7 +1061,7 @@ async function openTariffs(ix){
  tariffModal.setAttribute("aria-hidden","false");
  document.body.style.overflow="hidden";
  supplierFileSearch.value="";
- await loadSupplierFiles();
+ await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
 }
 function closeTariffs(){
  tariffModal.classList.remove("open");
@@ -1074,6 +1118,7 @@ function renderSupplierFiles(){
 }
 async function uploadSupplierFiles(files){
  if(currentTariffSupplier<0||!files||!files.length)return;
+ if(storageBlocked){alert("Limite de stockage atteinte. Supprimez des documents avant d’en ajouter de nouveaux.");return;}
  const x=DATA[currentTariffSupplier],fid=Number(x._d1_id);
  if(!Number.isInteger(fid)||fid<=0){alert("Identifiant fournisseur Cloudflare introuvable.");return}
  let done=0;
@@ -1092,14 +1137,14 @@ async function uploadSupplierFiles(files){
    });
    if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
    const j=await r.json().catch(()=>({}));
-   if(!r.ok||!j.ok)throw new Error(j.error||("Erreur HTTP "+r.status));
+   if(!r.ok||!j.ok)throw new Error(j.message||j.error||("Erreur HTTP "+r.status));
    done++;
   }catch(err){
    alert("Import impossible pour "+file.name+" : "+err.message);
   }
  }
  uploadProgress.textContent=done+" fichier(s) importé(s).";
- await loadSupplierFiles();
+ await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
  setTimeout(()=>{uploadProgress.textContent=""},2500);
 }
 async function downloadSupplierFile(encodedKey){
@@ -1125,7 +1170,7 @@ async function deleteSupplierFile(encodedKey,name){
  if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
  const j=await r.json().catch(()=>({}));
  if(!r.ok||!j.ok){alert(j.error||"Suppression impossible.");return}
- await loadSupplierFiles();
+ await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
 }
 
 supplierFileInput.addEventListener("change",e=>{uploadSupplierFiles(e.target.files);e.target.value=""});
@@ -1162,5 +1207,6 @@ async function loadSuppliersFromD1(){
  }catch(err){console.error("D1:",err);applyStoredData();rebuildProductSearchUnits();updateKpis();render();stats.textContent=DATA.length+" fournisseur(s) — API D1 inaccessible, données intégrées utilisées"}
 }
 loadSuppliersFromD1();
+loadStorageIndicator();
 
 </script></body></html>
