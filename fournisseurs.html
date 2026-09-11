@@ -185,7 +185,7 @@ input,select,button{font-family:inherit}
   right:14px;bottom:14px;border-radius:7px;padding:8px 11px;font-size:10px;background:var(--navy)
 }
 
-/* Articles / tariffs modals */
+/* Articles / documents modals */
 #articleModal,#tariffModal{background:#f3f5f6}
 .article-shell,.tariff-shell{padding:14px}
 .article-top,.tariff-top{background:#f3f5f6}
@@ -470,7 +470,7 @@ function render(){
  <div class="tags">${x.categories&&x.categories.length?x.categories.map(c=>`<span class="tag">${esc(c)}</span>`).join(""):`<span class="badge neutral">Aucune catégorie renseignée</span>`}</div>
  ${x.note?`<div class="note">${esc(x.note)}</div>`:""}
  ${x.source?`<div class="note"><a href="${x.source}" target="_blank" rel="noopener">Source de contrôle</a></div>`:""}
- <div class="supplier-actions"><button class="article-btn ${ac?'':'zero'}" ${ac?`onclick="openArticles(${ix})"`:'disabled'}>Articles (${ac})</button><button class="tariff-btn" onclick="openTariffs(${ix})">Tarifs${tariffCount(ix)?` (${tariffCount(ix)})`:""}</button></div>
+ <div class="supplier-actions"><button class="article-btn ${ac?'':'zero'}" ${ac?`onclick="openArticles(${ix})"`:'disabled'}>Articles (${ac})</button><button class="tariff-btn" onclick="openTariffs(${ix})">Documents</button></div>
  </div>`}).join("");
  syncFilterHighlights();
 }
@@ -992,7 +992,6 @@ articleImportInput.addEventListener("change",e=>{
 
 
 const FILE_API="https://braconnier-auth.sebastien-025.workers.dev";
-let currentTariffSupplier=-1;
 let currentSupplierFiles=[];
 
 function portalToken(){return sessionStorage.getItem("braconnier_portal_token_v3")||""}
