@@ -1118,7 +1118,7 @@ function renderSupplierFiles(){
     <div><div class="file-name" title="${safeText(f.name)}">${safeText(f.name)}</div>
     <div class="file-meta">${safeText(fileSizeLabel(f.size))}${d?" · "+safeText(d):""}</div></div>
     <div class="file-buttons">
-      ${canPreviewSupplierFile(f)?`<button class="file-open" type="button" onclick="openSupplierFile('${key}')">Ouvrir</button>`:""}
+      <button class="file-open" type="button" onclick="openSupplierFile('${key}', '${safeText(String(f.name||"").replace(/'/g,"&#39;"))}')">Ouvrir</button>
       <button class="file-download" type="button" onclick="downloadSupplierFile('${key}')">Télécharger</button>
       <button class="file-delete" type="button" onclick="deleteSupplierFile('${key}', '${safeText(String(f.name||"").replace(/'/g,"&#39;"))}')">Supprimer</button>
     </div>
@@ -1156,7 +1156,7 @@ async function uploadSupplierFiles(files){
  await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
  setTimeout(()=>{uploadProgress.textContent=""},2500);
 }
-async function openSupplierFile(encodedKey){
+async function openSupplierFile(encodedKey,fileName){
  const previewWindow=window.open("about:blank","_blank");
  if(!previewWindow){alert("Le navigateur a bloqué l’ouverture du nouvel onglet. Autorisez les fenêtres pop-up pour ce site.");return}
  try{
