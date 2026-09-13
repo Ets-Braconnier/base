@@ -1262,11 +1262,17 @@ async function loadSuppliersFromD1(){
   if(!res.ok)throw new Error("HTTP "+res.status);
   const json=await res.json();
   if(!json.ok||!Array.isArray(json.fournisseurs))throw new Error("Réponse API invalide");
-  const byVat=new Map(DATA.map((x,i)=>[n(String(x.tva||"").replace(/[^a-z0-9]/gi,"")),i]).filter(([k])=>k));
+  const byVat=new Map();
+  DATA.forEach((x,i)=>{
+   const vat=n(String(x.tva||"").replace(/[^a-z0-9]/gi,""));
+   if(vat)byVat.set(vat,byVat.has(vat)?null:i);
+  });
   const byName=new Map(DATA.map((x,i)=>[n(x.fournisseur_source),i]));
   for(const f of json.fournisseurs){
    const vat=n(String(f.tva||"").replace(/[^a-z0-9]/gi,""));
-   let ix=vat&&byVat.has(vat)?byVat.get(vat):byName.get(n(f.nom||""));
+   // Plusieurs fiches peuvent partager une TVA : le nom exact est prioritaire.
+   let ix=byName.get(n(f.nom||""));
+   if(ix===undefined&&vat&&byVat.get(vat)!=null)ix=byVat.get(vat);
    if(ix===undefined)continue;
    const x=DATA[ix];x._d1_id=f.id;x.fournisseur_source=f.nom||x.fournisseur_source;x.nom_actuel=f.nom_actuel||x.nom_actuel;x.tva=f.tva||x.tva;x.pays=f.pays||x.pays;x.adresse=f.adresse||x.adresse;x.type_inactif=f.type_inactif||x.type_inactif;x.note=f.note??x.note;x.nb_articles_excel=Number(f.nb_articles??x.nb_articles_excel??0);x._d1_nb_articles=Number(f.nb_articles??0);
   }
