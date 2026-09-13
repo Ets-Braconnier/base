@@ -1102,6 +1102,9 @@ function canPreviewSupplierFile(file){
  if(type==="application/pdf"||type.startsWith("text/"))return true;
  return /\.(pdf|png|jpe?g|gif|webp|svg|bmp|txt|csv|log|json|xml)$/i.test(name);
 }
+function supplierFileDisplayName(name){
+ return String(name||"").replace(/^\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-(?=.)/i,"");
+}
 function renderSupplierFiles(){
  const q=String(supplierFileSearch.value||"").trim().toLowerCase();
  const rows=currentSupplierFiles.filter(f=>!q||String(f.name||"").toLowerCase().includes(q));
@@ -1110,7 +1113,8 @@ function renderSupplierFiles(){
   supplierFileList.innerHTML='<div class="file-empty">Aucun fichier pour ce fournisseur.<br>Glissez un document ici pour l’ajouter.</div>';
   return;
  }
- supplierFileList.innerHTML=rows.map(f=>{
+ supplierFileList.innerHTML=rows.map(file=>{
+  const f={...file,name:supplierFileDisplayName(file.name)};
   const d=f.uploadedAt?new Date(f.uploadedAt).toLocaleString("fr-BE"):"";
   const key=encodeURIComponent(f.key);
   return `<div class="file-card">
@@ -1224,7 +1228,8 @@ async function downloadSupplierFile(encodedKey){
  const blob=await r.blob();
  const cd=r.headers.get("Content-Disposition")||"";
  const m=cd.match(/filename\*=UTF-8''([^;]+)/i)||cd.match(/filename="?([^"]+)"?/i);
- const name=m?decodeURIComponent(m[1]):"document";
+ const listedFile=currentSupplierFiles.find(f=>f.key===key);
+ const name=supplierFileDisplayName(m?decodeURIComponent(m[1]):listedFile?.name||"document");
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
 }
