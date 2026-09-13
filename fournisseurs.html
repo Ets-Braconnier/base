@@ -223,7 +223,7 @@ input,select,button{font-family:inherit}
 .storage-panel.danger .storage-fill,.storage-panel.blocked .storage-fill{background:#a33b3b}
 .storage-note{font-size:9px;color:#7a838d;margin-top:6px}
 .storage-panel.blocked .storage-note{color:#a33b3b;font-weight:800}
-</style></head><body>
+</style><script src="portal-session.js"></script></head><body>
 <div class="wrap">
 <div class="app-header">
   <div class="app-brand">
@@ -233,8 +233,8 @@ input,select,button{font-family:inherit}
       <div class="app-subtitle">Ets Braconnier · recherche, articles et documents</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:7px">
-      <a href="netstore.html" class="back-netstore">NetStore</a>
+  <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+      <a href="index.html" class="back-netstore">Accueil</a><a href="calculs.html" class="back-netstore">Calculs</a><a href="netstore.html" class="back-netstore">NetStore</a>
       <button class="back-netstore" style="border:0;cursor:pointer" onclick="portalLogout()">Déconnexion</button>
       <div class="app-pill">Base interne</div>
     </div>

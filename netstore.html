@@ -50,7 +50,7 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 .db-frame{width:100%;height:100%;border:0;background:#fff}
 @media(max-width:560px){.nav-btn{padding:0 8px;font-size:9px}.search{width:135px}}
 
-</style></head>
+</style><script src="portal-session.js"></script></head>
 <body>
 <div class="top">
   <div class="top-nav">
@@ -58,7 +58,7 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
     <button class="nav-btn" onclick="window.location.href='fournisseurs.html'">Base de donnée</button>
   </div>
   <input id="q" class="search" placeholder="Rechercher un fournisseur…" oninput="filterAll()">
-  <button id="portalLogout" class="nav-btn" onclick="portalLogout()">Déconnexion</button>
+  <button class="nav-btn" onclick="location.href='index.html'">Accueil</button><button class="nav-btn" onclick="location.href='calculs.html'">Calculs</button><button id="logoutButton" class="nav-btn" onclick="portalLogout()">Déconnexion</button>
 </div>
 <div class="wrap">
 <section class="section c0">

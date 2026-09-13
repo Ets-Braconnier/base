@@ -28,7 +28,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 .logout{grid-column:1/-1;justify-self:end;border:0;background:none;color:#6b7280;font-size:10px;cursor:pointer;padding:5px}
 @media(max-width:600px){.content{padding:20px}.apps{grid-template-columns:1fr}}
 </style>
-</head>
+<script src="portal-session.js"></script></head>
 <body>
 <div class="shell">
 <div class="head"><div class="logo">B</div><div><strong>Ets Braconnier</strong><span>Portail interne sécurisé</span></div></div>
@@ -45,6 +45,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 <div class="welcome"><h1>Bienvenue</h1><p>Choisissez l'espace à ouvrir.</p></div>
 <a class="app net" href="netstore.html"><div class="icon">N</div><b>NetStore</b><small>Fournisseurs en ligne et accès sécurisés.</small></a>
 <a class="app db" href="fournisseurs.html"><div class="icon">B</div><b>Base de donnée</b><small>Fournisseurs, articles, catégories et tarifs.</small></a>
+<a class="app calc" href="calculs.html"><div class="icon" style="background:#2d6b5e">C</div><b>Calculs</b><small>Quantités, volumes, poids et charges admissibles.</small></a>
 <button id="logout" class="logout" type="button">Se déconnecter</button>
 </section>
 </div></div>
@@ -78,6 +79,6 @@ form.addEventListener("submit",async e=>{
  }catch(err){msg.textContent=err.message||"Accès refusé.";password.select()}
  finally{submit.disabled=false;submit.textContent="Se connecter"}
 });
-document.getElementById("logout").addEventListener("click",()=>{sessionStorage.removeItem(TOKEN_KEY);showLogin()});
+document.getElementById("logout").addEventListener("click",()=>portalLogout());
 </script>
 </body></html>
