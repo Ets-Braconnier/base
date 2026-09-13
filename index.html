@@ -23,7 +23,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 .app{border:1px solid var(--line);border-radius:12px;padding:20px;text-decoration:none;color:var(--ink);transition:.15s;background:#fff}
 .app:hover{transform:translateY(-2px);border-color:#cbd2d8;box-shadow:0 6px 18px rgba(0,0,0,.06)}
 .icon{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:900;margin-bottom:13px}
-.net .icon{background:var(--orange)}.db .icon{background:#7252b7}.app b{display:block;font-size:15px}.app small{display:block;color:var(--muted);font-size:10px;line-height:1.45;margin-top:5px}
+.net .icon{background:var(--orange)}.db .icon{background:#7252b7}.web .icon{background:#29343d}.app b{display:block;font-size:15px}.app small{display:block;color:var(--muted);font-size:10px;line-height:1.45;margin-top:5px}
 .welcome{grid-column:1/-1}.welcome h1{font-size:20px;margin:0 0 4px}.welcome p{font-size:11px;color:var(--muted);margin:0}
 .logout{grid-column:1/-1;justify-self:end;border:0;background:none;color:#6b7280;font-size:10px;cursor:pointer;padding:5px}
 @media(max-width:600px){.content{padding:20px}.apps{grid-template-columns:1fr}}
@@ -46,6 +46,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 <a class="app net" href="netstore.html"><div class="icon">N</div><b>NetStore</b><small>Fournisseurs en ligne et accès sécurisés.</small></a>
 <a class="app db" href="fournisseurs.html"><div class="icon">B</div><b>Base de donnée</b><small>Fournisseurs, articles, catégories et tarifs.</small></a>
 <a class="app calc" href="calculs.html"><div class="icon" style="background:#2d6b5e">C</div><b>Calculs</b><small>Quantités, volumes, poids et charges admissibles.</small></a>
+<a class="app web" href="https://www.braconnier.be/" target="_blank" rel="noopener"><div class="icon">W</div><b>Site internet</b><small>Accéder au site officiel www.braconnier.be.</small></a>
 <button id="logout" class="logout" type="button">Se déconnecter</button>
 </section>
 </div></div>
