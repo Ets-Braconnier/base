@@ -223,7 +223,24 @@ input,select,button{font-family:inherit}
 .storage-panel.danger .storage-fill,.storage-panel.blocked .storage-fill{background:#a33b3b}
 .storage-note{font-size:9px;color:#7a838d;margin-top:6px}
 .storage-panel.blocked .storage-note{color:#a33b3b;font-weight:800}
-</style><script src="portal-session.js"></script></head><body>
+</style><script>
+(() => {
+ const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
+ const home=new URL("index.html",window.location.href).href;
+ window.portalLogout=function(){
+  sessionStorage.removeItem(tokenKey);
+  try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}
+  window.location.replace(home);
+ };
+ window.addEventListener("storage",event=>{
+  if(event.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}
+ });
+ window.addEventListener("pageshow",event=>{
+  if(event.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home);
+ });
+})();
+
+</script></head><body>
 <div class="wrap">
 <div class="app-header">
   <div class="app-brand">

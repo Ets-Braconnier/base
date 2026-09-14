@@ -50,17 +50,32 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 .db-frame{width:100%;height:100%;border:0;background:#fff}
 @media(max-width:560px){.nav-btn{padding:0 8px;font-size:9px}.search{width:135px}}
 
-</style><script src="portal-session.js"></script></head>
+.wrap{max-width:1600px;padding:18px}.portal-header{background:#29343d;color:white;border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}.portal-brand{display:flex;align-items:center;gap:12px}.portal-logo{width:44px;height:44px;border-radius:10px;background:#f47b00;display:grid;place-items:center;font-size:24px;font-weight:bold}.portal-brand h1{font-size:23px;margin:0}.portal-brand p{font-size:12px;margin:5px 0 0;color:#d5dde1}.portal-nav{display:flex;gap:8px;flex-wrap:wrap}.portal-nav a,.portal-nav button{background:#f47b00;color:white;border:0;border-radius:7px;padding:10px 12px;font:700 12px Arial;text-decoration:none;cursor:pointer}.portal-nav a:hover,.portal-nav button:hover{background:#dc6f00}.search-bar{margin-bottom:16px}.search-bar .search{margin:0;width:100%;height:40px;border:1px solid #dde2e6;font-size:13px;background:white}.portal-nav :focus-visible{outline:3px solid white;outline-offset:2px}@media(max-width:750px){.wrap{padding:10px}.portal-header{padding:16px}}
+.card{min-width:0}.actions{grid-template-columns:minmax(0,82px) minmax(0,88px)}.portal-brand{min-width:0}.portal-brand>div:last-child{min-width:0}.portal-logo{flex-shrink:0}@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:370px){.grid{grid-template-columns:1fr}}</style><script>
+(() => {
+ const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
+ const home=new URL("index.html",window.location.href).href;
+ window.portalLogout=function(){
+  sessionStorage.removeItem(tokenKey);
+  try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}
+  window.location.replace(home);
+ };
+ window.addEventListener("storage",event=>{
+  if(event.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}
+ });
+ window.addEventListener("pageshow",event=>{
+  if(event.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home);
+ });
+})();
+
+</script></head>
 <body>
-<div class="top">
-  <div class="top-nav">
-    <button class="nav-btn active" onclick="showNetStore()">NetStore</button>
-    <button class="nav-btn" onclick="window.location.href='fournisseurs.html'">Base de donnée</button>
-  </div>
-  <input id="q" class="search" placeholder="Rechercher un fournisseur…" oninput="filterAll()">
-  <button class="nav-btn" onclick="location.href='index.html'">Accueil</button><button class="nav-btn" onclick="location.href='calculs.html'">Calculs</button><button id="logoutButton" class="nav-btn" onclick="portalLogout()">Déconnexion</button>
-</div>
 <div class="wrap">
+<header class="portal-header">
+ <div class="portal-brand"><div class="portal-logo">B</div><div><h1>NetStore</h1><p>Ets Braconnier · fournisseurs en ligne et accès sécurisés</p></div></div>
+ <nav class="portal-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="fournisseurs.html">Base fournisseurs</a><a href="calculs.html">Calculs</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav>
+</header>
+<div class="search-bar"><input id="q" class="search" type="search" aria-label="Rechercher un fournisseur" placeholder="Rechercher un fournisseur…" oninput="filterAll()"></div>
 <section class="section c0">
   <div class="category"><strong>⚡ &nbsp;ÉLECTRICITÉ</strong></div>
   <div class="grid">
