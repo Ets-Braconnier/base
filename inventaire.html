@@ -19,6 +19,38 @@
 .toast{position:fixed;right:14px;bottom:14px;z-index:10001;background:#202830;color:#fff;border-radius:8px;padding:10px 12px;font-size:11px;box-shadow:0 6px 22px rgba(0,0,0,.18);display:none}.toast.show{display:block}
 @media(max-width:760px){.wrap{padding:8px}.header{border-radius:9px}.head-actions .desktop-hide{display:none}.statusbar{grid-template-columns:1fr 1fr}.scan-btn{display:block}.article-grid{grid-template-columns:1fr 1fr}.qty-row{grid-template-columns:1fr auto}.previous{grid-column:1/-1}.search{font-size:16px}.panel{padding:10px}}
 @media(max-width:420px){.article-grid{grid-template-columns:1fr}.qty-row{grid-template-columns:1fr}.ok-btn{width:100%}}
+
+.admin-open{background:#8a4f13!important}
+#adminModal{display:none;position:fixed;inset:0;z-index:12000;background:rgba(20,26,31,.68);padding:18px;overflow:auto}
+#adminModal.show{display:block}
+.admin-shell{width:min(1180px,100%);margin:0 auto;background:#f5f7f8;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.28);overflow:hidden}
+.admin-top{background:var(--navy);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.admin-top h2{font-size:16px;margin:0}.admin-top small{display:block;color:#cbd3d9;font-size:10px;margin-top:3px}
+.admin-top button{border:0;border-radius:7px;background:#fff;color:#222;padding:8px 11px;font-size:10px;font-weight:800;cursor:pointer}
+.admin-content{padding:12px}
+.admin-login{max-width:430px;margin:30px auto;background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px}
+.admin-login h3{margin:0 0 5px;font-size:16px}.admin-login p{font-size:10px;color:var(--muted);line-height:1.45}
+.admin-login input{width:100%;height:42px;border:1px solid #cfd6dc;border-radius:8px;padding:0 11px}
+.admin-login button{width:100%;height:39px;margin-top:8px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:900;cursor:pointer}
+.admin-error{min-height:16px;color:var(--red);font-size:10px;margin-top:6px}
+.admin-dashboard{display:none}.admin-dashboard.show{display:block}
+.admin-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.admin-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px}
+.admin-tools input{height:34px;min-width:220px;flex:1;border:1px solid #cfd6dc;border-radius:7px;padding:0 10px}
+.admin-tools button{height:34px;border:0;border-radius:7px;padding:0 11px;color:#fff;font-size:10px;font-weight:800;cursor:pointer}
+.admin-tools .all-export{background:#217346}.admin-tools .refresh{background:var(--blue)}.admin-tools .logout-admin{background:#6b7280}
+.admin-table{width:100%;border-collapse:collapse;min-width:760px}.admin-table th,.admin-table td{padding:9px;border-bottom:1px solid #edf0f2;font-size:10px;text-align:left}.admin-table th{background:#eef2f3;position:sticky;top:0}
+.admin-table button{border:0;border-radius:6px;padding:6px 8px;color:#fff;font-size:9px;font-weight:800;cursor:pointer;margin-right:4px}.admin-table .open{background:var(--blue)}.admin-table .one-excel{background:#217346}
+.admin-detail{display:none;margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px}.admin-detail.show{display:block}
+.admin-detail-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.admin-detail-head h3{margin:0;font-size:14px}.admin-detail-head button{height:31px;border:0;border-radius:6px;padding:0 9px;color:#fff;background:#217346;font-size:9px;font-weight:800;cursor:pointer}
+@media(max-width:760px){#adminModal{padding:0}.admin-shell{min-height:100vh;border-radius:0}.admin-kpis{grid-template-columns:1fr}.admin-content{padding:8px}}
+
+
+.admin-table .delete-one{background:#b42318}
+.admin-tools .delete-user{background:#b42318}
+.admin-detail-head .delete-user{background:#b42318}
+.admin-detail .delete-row{border:0;border-radius:6px;padding:6px 8px;background:#b42318;color:#fff;font-size:9px;font-weight:800;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -39,6 +71,7 @@
     <div class="head-actions">
       <a href="index.html" class="desktop-hide">Accueil</a>
       <a href="fournisseurs.html" class="desktop-hide">Base fournisseurs</a>
+      <button id="adminBtn" class="admin-open">Gestion des inventaires</button>
       <button class="orange" id="changeUserBtn">Changer d’utilisateur</button>
     </div>
   </div>
@@ -90,6 +123,83 @@
   </div>
 </div>
 
+
+<div id="adminModal">
+  <div class="admin-shell">
+    <div class="admin-top">
+      <div>
+        <h2>Gestion des inventaires</h2>
+        <small>Tous les inventaires enregistrés dans D1, au même endroit.</small>
+      </div>
+      <button id="adminCloseBtn" type="button">Fermer ✕</button>
+    </div>
+
+    <div class="admin-content">
+      <div id="adminLogin" class="admin-login">
+        <h3>Accès administrateur</h3>
+        <p>Entrez le mot de passe administrateur de la Base fournisseurs. Il n’est conservé que pendant cette session du navigateur.</p>
+        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Mot de passe administrateur">
+        <button id="adminLoginBtn" type="button">Ouvrir la gestion</button>
+        <div id="adminError" class="admin-error"></div>
+      </div>
+
+      <div id="adminDashboard" class="admin-dashboard">
+        <div class="admin-kpis">
+          <div class="kpi"><b id="adminUsersKpi">0</b><span>Inventaires / utilisateurs</span></div>
+          <div class="kpi"><b id="adminArticlesKpi">0</b><span>Articles comptés</span></div>
+          <div class="kpi"><b id="adminUnitsKpi">0</b><span>Unités comptées</span></div>
+        </div>
+
+        <div class="admin-tools">
+          <input id="adminSearch" type="search" placeholder="Rechercher un utilisateur…">
+          <button id="adminRefreshBtn" class="refresh" type="button">Actualiser</button>
+          <button id="adminExportAllBtn" class="all-export" type="button">Exporter tous les inventaires</button>
+          <button id="adminLogoutBtn" class="logout-admin" type="button">Verrouiller</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Articles</th>
+                <th>Unités</th>
+                <th>Dernière saisie</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminInventoryBody"></tbody>
+          </table>
+        </div>
+
+        <div id="adminDetail" class="admin-detail">
+          <div class="admin-detail-head">
+            <h3 id="adminDetailTitle">Inventaire</h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><button id="adminDetailExportBtn" type="button">Télécharger cet Excel</button><button id="adminDeleteUserBtn" class="delete-user" type="button">Supprimer cet inventaire</button></div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>EAN</th>
+                  <th>N° article</th>
+                  <th>N° article fournisseur</th>
+                  <th>Dénomination</th>
+                  <th>Fournisseur</th>
+                  <th>Quantité</th>
+                  <th>Dernière saisie</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminDetailBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="scannerModal">
   <div class="scanner-shell">
     <div class="scanner-top"><b>Scanner le code-barres</b><button id="closeScanner">Fermer ✕</button></div>
@@ -106,6 +216,7 @@ const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
 const USER_KEY="braconnier_inventory_user_v1";
 const LOCAL_PREFIX="braconnier_inventory_v1_";
 let catalog=[], currentUser="", selectedArticle=null, inventory=new Map(), serverInventoryAvailable=true, pendingSync=new Set();
+let adminPassword="", adminSummaries=[], adminDetailItems=[], adminDetailLogin="";
 let scannerStream=null, scannerLoop=null;
 
 const $=id=>document.getElementById(id);
@@ -158,25 +269,70 @@ async function loadServerInventory(){
     setSyncBadge("wait","Synchronisation…");
     const j=await apiJson("/inventaire?login="+encodeURIComponent(currentUser));
     if(Array.isArray(j.items)){
-      for(const x of j.items){const item={...x,key:x.key||articleKey(x)};const local=inventory.get(item.key);if(!local||String(item.updated_at||"")>String(local.updated_at||""))inventory.set(item.key,item)}
+      const localPending=[...inventory.values()].filter(x=>x.local_pending===true);
+      const serverMap=new Map();
+      for(const x of j.items){
+        const item={...x,key:x.key||articleKey(x),local_pending:false};
+        serverMap.set(item.key,item);
+      }
+      for(const local of localPending){
+        const server=serverMap.get(local.key);
+        if(!server||String(local.updated_at||"")>String(server.updated_at||"")){
+          serverMap.set(local.key,local);
+          pendingSync.add(local.key);
+        }
+      }
+      inventory=serverMap;
       saveLocalInventory();renderInventory();
     }
-    serverInventoryAvailable=true;setSyncBadge("ok","D1 synchronisé");
+    serverInventoryAvailable=true;setSyncBadge("ok",pendingSync.size?pendingSync.size+" en attente":"D1 synchronisé");
   }catch(err){serverInventoryAvailable=false;setSyncBadge("bad","Local uniquement");console.warn("Inventaire D1 indisponible:",err.message)}
 }
 async function syncItem(item){
   pendingSync.add(item.key);setSyncBadge("wait","Synchronisation…");
   try{
     await apiJson("/inventaire/upsert",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({login:currentUser,item})});
-    pendingSync.delete(item.key);serverInventoryAvailable=true;setSyncBadge("ok",pendingSync.size?pendingSync.size+" en attente":"D1 synchronisé");
+    pendingSync.delete(item.key);item.local_pending=false;inventory.set(item.key,item);saveLocalInventory();serverInventoryAvailable=true;setSyncBadge("ok",pendingSync.size?pendingSync.size+" en attente":"D1 synchronisé");
   }catch(err){serverInventoryAvailable=false;setSyncBadge("bad","Local uniquement · "+pendingSync.size+" à synchroniser");console.warn(err)}
 }
 async function syncAll(){
-  if(!inventory.size){setSyncBadge(serverInventoryAvailable?"ok":"bad",serverInventoryAvailable?"D1 synchronisé":"Local uniquement");return}
+  const todo=[...inventory.values()].filter(item=>item.local_pending===true||pendingSync.has(item.key));
+
+  if(!todo.length){
+    await loadServerInventory();
+    return;
+  }
+
   setSyncBadge("wait","Synchronisation…");
   let ok=0,fail=0;
-  for(const item of inventory.values()){try{await apiJson("/inventaire/upsert",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({login:currentUser,item})});pendingSync.delete(item.key);ok++}catch{pendingSync.add(item.key);fail++}}
-  serverInventoryAvailable=fail===0;setSyncBadge(fail?"bad":"ok",fail?(fail+" non synchronisé(s)"):"D1 synchronisé");if(ok)toast(ok+" ligne(s) synchronisée(s)")
+
+  for(const item of todo){
+    try{
+      await apiJson("/inventaire/upsert",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({login:currentUser,item})
+      });
+      item.local_pending=false;
+      inventory.set(item.key,item);
+      pendingSync.delete(item.key);
+      ok++;
+    }catch{
+      pendingSync.add(item.key);
+      fail++;
+    }
+  }
+
+  saveLocalInventory();
+  serverInventoryAvailable=fail===0;
+
+  if(fail){
+    setSyncBadge("bad",fail+" non synchronisé(s)");
+  }else{
+    await loadServerInventory();
+  }
+
+  if(ok)toast(ok+" ligne(s) synchronisée(s)");
 }
 
 async function loadCatalog(){
@@ -222,7 +378,7 @@ function runLookup({scan=false}={}){
 
 async function saveCount(){
   if(!selectedArticle)return;const qty=Number($("qtyInput").value);if(!Number.isFinite(qty)||qty<0){toast("Entrez une quantité valide.");$("qtyInput").focus();return}
-  const item={key:articleKey(selectedArticle),ean:selectedArticle.ean||"",numero_article:selectedArticle.numero_article||"",num_fournisseur:selectedArticle.num_fournisseur||"",denomination:selectedArticle.denomination||"",fournisseur:selectedArticle.fournisseur||"",fournisseur_id:selectedArticle.fournisseur_id||null,quantite:qty,updated_at:nowIso()};
+  const item={key:articleKey(selectedArticle),ean:selectedArticle.ean||"",numero_article:selectedArticle.numero_article||"",num_fournisseur:selectedArticle.num_fournisseur||"",denomination:selectedArticle.denomination||"",fournisseur:selectedArticle.fournisseur||"",fournisseur_id:selectedArticle.fournisseur_id||null,quantite:qty,updated_at:nowIso(),local_pending:true};
   inventory.set(item.key,item);saveLocalInventory();renderInventory();syncItem(item);toast("Quantité enregistrée : "+qty);
   selectedArticle=null;$("selected").classList.remove("show");$("searchInput").value="";$("results").innerHTML="";$("searchInput").focus();
 }
@@ -232,6 +388,270 @@ function exportExcel(){
   const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{Login:currentUser,"Code EAN":"","N° article":"","N° article fournisseur":"","Dénomination":"","Fournisseur":"","Quantité":"","Dernière saisie":""}]);ws["!autofilter"]={ref:ws["!ref"]};ws["!cols"]=[{wch:18},{wch:18},{wch:16},{wch:24},{wch:48},{wch:24},{wch:12},{wch:22}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Inventaire");const fn="Inventaire_"+currentUser.replace(/[^a-z0-9_-]+/gi,"_")+".xlsx";XLSX.writeFile(wb,fn)
 }
+
+
+function adminHeaders(){
+  return adminPassword ? {"X-Admin-Password":adminPassword} : {};
+}
+
+async function adminApi(path,opts={}){
+  const headers={...adminHeaders(),...(opts.headers||{})};
+  const r=await fetch(API_BASE+path,{...opts,headers});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||j.ok===false)throw new Error(j.erreur||("HTTP "+r.status));
+  return j;
+}
+
+function safeSheetName(name,used){
+  let base=String(name||"Inventaire").replace(/[\\/?*[\]:]/g," ").trim()||"Inventaire";
+  base=base.slice(0,31);
+  let out=base,n=2;
+  while(used.has(out)){const suffix=" "+n++;out=(base.slice(0,31-suffix.length)+suffix)}
+  used.add(out);return out;
+}
+
+function inventoryRowsForExcel(login,items){
+  return items.map(x=>({
+    Login:login,
+    "Code EAN":x.ean||"",
+    "N° article":x.numero_article||"",
+    "N° article fournisseur":x.num_fournisseur||"",
+    "Dénomination":x.denomination||"",
+    "Fournisseur":x.fournisseur||"",
+    "Quantité":x.quantite,
+    "Dernière saisie":niceDate(x.updated_at)
+  }));
+}
+
+function makeInventorySheet(login,items){
+  const rows=inventoryRowsForExcel(login,items);
+  const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{
+    Login:login,"Code EAN":"","N° article":"","N° article fournisseur":"",
+    "Dénomination":"","Fournisseur":"","Quantité":"","Dernière saisie":""
+  }]);
+  ws["!autofilter"]={ref:ws["!ref"]};
+  ws["!cols"]=[{wch:20},{wch:18},{wch:16},{wch:24},{wch:48},{wch:24},{wch:12},{wch:22}];
+  return ws;
+}
+
+function renderAdminSummaries(){
+  const q=norm($("adminSearch").value);
+  const list=adminSummaries.filter(x=>!q||norm(x.login).includes(q));
+  $("adminUsersKpi").textContent=adminSummaries.length;
+  $("adminArticlesKpi").textContent=adminSummaries.reduce((s,x)=>s+safeNum(x.articles),0);
+  $("adminUnitsKpi").textContent=adminSummaries.reduce((s,x)=>s+safeNum(x.unites),0);
+
+  $("adminInventoryBody").innerHTML=list.length?list.map((x,i)=>`
+    <tr>
+      <td><b>${esc(x.login||"—")}</b></td>
+      <td>${esc(x.articles)}</td>
+      <td>${esc(x.unites)}</td>
+      <td>${esc(niceDate(x.derniere_saisie))}</td>
+      <td>
+        <button class="open" data-open="${i}">Ouvrir</button>
+        <button class="one-excel" data-excel="${i}">Excel</button>
+        <button class="delete-one" data-delete-user="${i}">Supprimer</button>
+      </td>
+    </tr>
+  `).join(""):`<tr><td colspan="5" class="empty">Aucun inventaire trouvé.</td></tr>`;
+
+  $("adminInventoryBody").querySelectorAll("[data-open]").forEach(btn=>{
+    btn.addEventListener("click",()=>openAdminInventory(list[Number(btn.dataset.open)].login));
+  });
+  $("adminInventoryBody").querySelectorAll("[data-excel]").forEach(btn=>{
+    btn.addEventListener("click",()=>exportOneAdminInventory(list[Number(btn.dataset.excel)].login));
+  });
+  $("adminInventoryBody").querySelectorAll("[data-delete-user]").forEach(btn=>{
+    btn.addEventListener("click",()=>deleteAdminUserInventory(list[Number(btn.dataset.deleteUser)].login).catch(err=>toast(err.message)));
+  });
+}
+
+async function loadAdminSummaries(){
+  $("adminInventoryBody").innerHTML='<tr><td colspan="5" class="empty">Chargement…</td></tr>';
+  const j=await adminApi("/admin/inventaires");
+  adminSummaries=Array.isArray(j.inventaires)?j.inventaires:[];
+  renderAdminSummaries();
+}
+
+async function openAdminInventory(login){
+  $("adminDetail").classList.add("show");
+  $("adminDetailTitle").textContent="Inventaire de "+login+" · chargement…";
+  $("adminDetailBody").innerHTML='<tr><td colspan="7" class="empty">Chargement…</td></tr>';
+  const j=await adminApi("/admin/inventaires?login="+encodeURIComponent(login));
+  adminDetailLogin=j.login||login;
+  adminDetailItems=Array.isArray(j.items)?j.items:[];
+  $("adminDetailTitle").textContent="Inventaire de "+adminDetailLogin+" · "+adminDetailItems.length+" article(s)";
+  $("adminDetailBody").innerHTML=adminDetailItems.length?adminDetailItems.map((x,i)=>`
+    <tr>
+      <td>${esc(x.ean||"")}</td>
+      <td>${esc(x.numero_article||"")}</td>
+      <td>${esc(x.num_fournisseur||"")}</td>
+      <td>${esc(x.denomination||"")}</td>
+      <td>${esc(x.fournisseur||"")}</td>
+      <td class="qtycell">${esc(x.quantite)}</td>
+      <td>${esc(niceDate(x.updated_at))}</td>
+      <td><button class="delete-row" data-delete-row="${i}" type="button">Supprimer</button></td>
+    </tr>
+  `).join(""):`<tr><td colspan="8" class="empty">Aucune ligne.</td></tr>`;
+
+  $("adminDetailBody").querySelectorAll("[data-delete-row]").forEach(btn=>{
+    btn.addEventListener("click",()=>deleteAdminItem(adminDetailItems[Number(btn.dataset.deleteRow)]).catch(err=>toast(err.message)));
+  });
+
+  $("adminDetail").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+
+async function deleteAdminItem(item){
+  if(!adminDetailLogin||!item)return;
+  const label=item.denomination||item.numero_article||item.ean||"cet article";
+  if(!confirm(`Supprimer définitivement "${label}" de l'inventaire de ${adminDetailLogin} ?`))return;
+
+  await adminApi(
+    "/admin/inventaires/item?login="+encodeURIComponent(adminDetailLogin)+"&key="+encodeURIComponent(item.key),
+    {method:"DELETE"}
+  );
+
+  if(norm(currentUser)===norm(adminDetailLogin)){
+    inventory.delete(item.key);
+    pendingSync.delete(item.key);
+    saveLocalInventory();
+    renderInventory();
+  }
+
+  toast("Ligne supprimée.");
+  await openAdminInventory(adminDetailLogin);
+  await loadAdminSummaries();
+}
+
+async function deleteAdminUserInventory(login){
+  if(!login)return;
+  if(!confirm(`Supprimer définitivement TOUT l'inventaire de ${login} ?\n\nCette action efface toutes ses lignes dans D1.`))return;
+
+  await adminApi(
+    "/admin/inventaires?login="+encodeURIComponent(login),
+    {method:"DELETE"}
+  );
+
+  if(norm(currentUser)===norm(login)){
+    inventory=new Map();
+    pendingSync.clear();
+    saveLocalInventory();
+    renderInventory();
+  }
+
+  adminDetailItems=[];
+  adminDetailLogin="";
+  $("adminDetail").classList.remove("show");
+  toast("Inventaire supprimé.");
+  await loadAdminSummaries();
+}
+
+async function exportOneAdminInventory(login){
+  const j=await adminApi("/admin/inventaires?login="+encodeURIComponent(login));
+  const items=Array.isArray(j.items)?j.items:[];
+  const realLogin=j.login||login;
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,makeInventorySheet(realLogin,items),"Inventaire");
+  XLSX.writeFile(wb,"Inventaire_"+realLogin.replace(/[^a-z0-9_-]+/gi,"_")+".xlsx");
+}
+
+async function exportAllAdminInventories(){
+  const btn=$("adminExportAllBtn");
+  const old=btn.textContent;
+  btn.disabled=true;btn.textContent="Préparation…";
+  try{
+    const j=await adminApi("/admin/inventaires?all=1");
+    const all=Array.isArray(j.items)?j.items:[];
+    const grouped=new Map();
+    for(const x of all){
+      const login=x.login||"Sans nom";
+      if(!grouped.has(login))grouped.set(login,[]);
+      grouped.get(login).push(x);
+    }
+
+    const wb=XLSX.utils.book_new();
+
+    const recap=[...grouped.entries()].map(([login,items])=>({
+      Utilisateur:login,
+      "Articles comptés":items.length,
+      "Unités":items.reduce((s,x)=>s+safeNum(x.quantite),0),
+      "Dernière saisie":niceDate(items.reduce((m,x)=>String(x.updated_at||"")>m?String(x.updated_at||""):m,""))
+    }));
+    const recapWs=XLSX.utils.json_to_sheet(recap.length?recap:[{Utilisateur:"","Articles comptés":"","Unités":"","Dernière saisie":""}]);
+    recapWs["!autofilter"]={ref:recapWs["!ref"]};
+    recapWs["!cols"]=[{wch:24},{wch:18},{wch:14},{wch:22}];
+    XLSX.utils.book_append_sheet(wb,recapWs,"Récapitulatif");
+
+    const used=new Set(["Récapitulatif"]);
+    for(const [login,items] of grouped){
+      XLSX.utils.book_append_sheet(wb,makeInventorySheet(login,items),safeSheetName(login,used));
+    }
+
+    const d=new Date();
+    const stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    XLSX.writeFile(wb,"Inventaires_Braconnier_"+stamp+".xlsx");
+    toast(grouped.size+" inventaire(s) exporté(s) dans un seul fichier.");
+  }finally{
+    btn.disabled=false;btn.textContent=old;
+  }
+}
+
+async function adminLogin(){
+  const pass=$("adminPassword").value;
+  if(!pass){$("adminError").textContent="Entrez le mot de passe administrateur.";return}
+  adminPassword=pass;
+  $("adminError").textContent="";
+  try{
+    await loadAdminSummaries();
+    sessionStorage.setItem("braconnier_inventory_admin_password",adminPassword);
+    $("adminLogin").style.display="none";
+    $("adminDashboard").classList.add("show");
+  }catch(err){
+    adminPassword="";
+    $("adminError").textContent=err.message||"Accès refusé.";
+    $("adminPassword").select();
+  }
+}
+
+function openAdminPanel(){
+  $("adminModal").classList.add("show");
+  const saved=sessionStorage.getItem("braconnier_inventory_admin_password")||"";
+  if(saved&&!adminPassword)adminPassword=saved;
+  if(adminPassword){
+    $("adminLogin").style.display="none";
+    $("adminDashboard").classList.add("show");
+    loadAdminSummaries().catch(err=>{
+      adminPassword="";
+      sessionStorage.removeItem("braconnier_inventory_admin_password");
+      $("adminDashboard").classList.remove("show");
+      $("adminLogin").style.display="";
+      $("adminError").textContent=err.message||"Accès refusé.";
+    });
+  }else{
+    $("adminDashboard").classList.remove("show");
+    $("adminLogin").style.display="";
+    setTimeout(()=>$("adminPassword").focus(),0);
+  }
+}
+
+function closeAdminPanel(){
+  $("adminModal").classList.remove("show");
+}
+
+function lockAdminPanel(){
+  adminPassword="";
+  adminSummaries=[];
+  adminDetailItems=[];
+  adminDetailLogin="";
+  sessionStorage.removeItem("braconnier_inventory_admin_password");
+  $("adminPassword").value="";
+  $("adminDashboard").classList.remove("show");
+  $("adminLogin").style.display="";
+  $("adminDetail").classList.remove("show");
+  $("adminError").textContent="";
+}
+
 
 async function startScanner(){
   if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible sur ce navigateur.");return}
@@ -251,6 +671,22 @@ async function login(name){
   currentUser=clean;localStorage.setItem(USER_KEY,currentUser);$("loginGate").style.display="none";loadLocalInventory();renderInventory();await loadServerInventory();if(!catalog.length)loadCatalog();$("searchInput").focus()
 }
 function changeUser(){localStorage.removeItem(USER_KEY);currentUser="";inventory=new Map();selectedArticle=null;$("selected").classList.remove("show");$("loginInput").value="";$("loginGate").style.display="grid";$("loginInput").focus()}
+
+
+$("adminBtn").addEventListener("click",openAdminPanel);
+$("adminCloseBtn").addEventListener("click",closeAdminPanel);
+$("adminLoginBtn").addEventListener("click",adminLogin);
+$("adminPassword").addEventListener("keydown",e=>{if(e.key==="Enter")adminLogin()});
+$("adminRefreshBtn").addEventListener("click",()=>loadAdminSummaries().catch(err=>toast(err.message)));
+$("adminExportAllBtn").addEventListener("click",()=>exportAllAdminInventories().catch(err=>toast(err.message)));
+$("adminLogoutBtn").addEventListener("click",lockAdminPanel);
+$("adminSearch").addEventListener("input",renderAdminSummaries);
+$("adminDetailExportBtn").addEventListener("click",()=>{
+  if(adminDetailLogin)exportOneAdminInventory(adminDetailLogin).catch(err=>toast(err.message));
+});
+$("adminDeleteUserBtn").addEventListener("click",()=>{
+  if(adminDetailLogin)deleteAdminUserInventory(adminDetailLogin).catch(err=>toast(err.message));
+});
 
 $("loginBtn").addEventListener("click",()=>login($("loginInput").value));$("loginInput").addEventListener("keydown",e=>{if(e.key==="Enter")login($("loginInput").value)});
 $("changeUserBtn").addEventListener("click",changeUser);$("searchInput").addEventListener("input",()=>runLookup());$("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();runLookup({scan:true})}});$("qtyInput").addEventListener("keydown",e=>{if(e.key==="Enter")saveCount()});$("okBtn").addEventListener("click",saveCount);$("exportBtn").addEventListener("click",exportExcel);$("syncBtn").addEventListener("click",syncAll);$("scanBtn").addEventListener("click",startScanner);$("closeScanner").addEventListener("click",closeScanner);
