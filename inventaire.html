@@ -65,6 +65,9 @@
   .result-qty{width:100px}
 }
 
+
+.history-table{width:100%;border-collapse:collapse;min-width:760px}.history-table th,.history-table td{padding:8px;border-bottom:1px solid #edf0f2;text-align:left;font-size:10px}.history-table th{background:#eef2f3}.history-qty{width:86px;height:34px;border:1px solid #cfd6dc;border-radius:7px;padding:0 7px;font-weight:800;text-align:center}.history-save{height:34px;border:0;border-radius:7px;padding:0 10px;background:var(--blue);color:#fff;font-size:9px;font-weight:800;cursor:pointer}.history-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.history-title h2{margin:0;font-size:15px}.history-title small{font-size:10px;color:var(--muted)}
+
 </style>
 </head>
 <body>
@@ -73,7 +76,7 @@
     <div class="login-brand">B</div>
     <h1>Inventaire Braconnier</h1>
     <p>Entrez simplement votre nom ou identifiant. Aucun mot de passe. Le même identifiant reprend automatiquement l’inventaire déjà commencé.</p>
-    <input id="loginInput" autocomplete="name" placeholder="">
+    <input id="loginInput" autocomplete="name" placeholder="Ex. Sébastien, Jonathan, Magasin1…">
     <button id="loginBtn">Commencer / reprendre</button>
     <div id="loginError" class="login-error"></div>
   </div>
@@ -119,6 +122,19 @@
         <button id="okBtn" class="ok-btn">OK ✓</button>
         <div id="previous" class="previous"></div>
       </div>
+    </div>
+  </div>
+
+  <div class="panel" id="historyPanel">
+    <div class="history-title">
+      <h2>20 dernières saisies</h2>
+      <small>Vous pouvez corriger directement une quantité.</small>
+    </div>
+    <div class="table-wrap">
+      <table class="history-table">
+        <thead><tr><th>Heure</th><th>Article</th><th>Dénomination</th><th>Quantité</th><th>Action</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -231,7 +247,7 @@ const USER_KEY="braconnier_inventory_user_v1";
 const LOCAL_PREFIX="braconnier_inventory_v1_";
 let catalog=[], currentUser="", selectedArticle=null, inventory=new Map(), serverInventoryAvailable=true, pendingSync=new Set();
 let adminPassword="", adminSummaries=[], adminDetailItems=[], adminDetailLogin="";
-let scannerStream=null, scannerLoop=null;
+let scannerStream=null, scannerLoop=null, scannerPaused=false, scannerPersistent=false;
 
 const $=id=>document.getElementById(id);
 const norm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
@@ -273,6 +289,31 @@ function renderInventory(){
   updateKpis();
   const rows=[...inventory.values()].sort((a,b)=>String(b.updated_at||"").localeCompare(String(a.updated_at||"")));
   $("inventoryBody").innerHTML=rows.length?rows.map(x=>`<tr><td>${esc(x.ean)}</td><td>${esc(x.numero_article)}</td><td>${esc(x.num_fournisseur)}</td><td>${esc(x.denomination)}</td><td>${esc(x.fournisseur||"")}</td><td class="qtycell">${esc(x.quantite)}</td><td>${esc(niceDate(x.updated_at))}</td></tr>`).join(""):`<tr><td colspan="7" class="empty">Aucun article compté pour cet utilisateur.</td></tr>`;
+  renderHistory();
+}
+
+function renderHistory(){
+  const rows=[...inventory.values()].sort((a,b)=>String(b.updated_at||"").localeCompare(String(a.updated_at||""))).slice(0,20);
+  const body=$("historyBody");
+  if(!body)return;
+  body.innerHTML=rows.length?rows.map((x,i)=>`<tr>
+    <td>${esc(niceDate(x.updated_at))}</td>
+    <td>${esc(x.numero_article||x.ean||"—")}</td>
+    <td>${esc(x.denomination||"—")}</td>
+    <td><input class="history-qty" data-history-qty="${i}" type="number" min="0" step="1" inputmode="numeric" value="${esc(x.quantite)}"></td>
+    <td><button class="history-save" data-history-save="${i}" type="button">Modifier</button></td>
+  </tr>`).join(""):`<tr><td colspan="5" class="empty">Aucune saisie pour le moment.</td></tr>`;
+  body.querySelectorAll("[data-history-save]").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      const i=Number(btn.dataset.historySave);
+      const item=rows[i];
+      const input=body.querySelector(`[data-history-qty="${i}"]`);
+      if(!item||!input)return;
+      const ok=await saveCountForArticle(item,input.value,{resetAfter:false,resumeCamera:false});
+      if(ok){btn.textContent="✓ Modifié";setTimeout(()=>btn.textContent="Modifier",900)}
+    });
+  });
+  body.querySelectorAll("[data-history-qty]").forEach(input=>input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();body.querySelector(`[data-history-save="${input.dataset.historyQty}"]`)?.click()}}));
 }
 
 async function apiJson(path,opts={}){const r=await fetch(API_BASE+path,opts);const j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)throw new Error(j.erreur||("HTTP "+r.status));return j}
@@ -372,7 +413,7 @@ function searchCatalog(q){
   return catalog.map(a=>({a,s:scoreArticle(a,cleaned)})).filter(x=>x.s>0).sort((x,y)=>y.s-x.s||String(x.a.denomination).localeCompare(String(y.a.denomination),"fr")).slice(0,30).map(x=>x.a)
 }
 
-async function saveCountForArticle(a,qtyValue){
+async function saveCountForArticle(a,qtyValue,{resetAfter=true,resumeCamera=true}={}){
   const qty=Number(qtyValue);
   if(!Number.isFinite(qty)||qty<0){
     toast("Entrez une quantité valide.");
@@ -398,6 +439,18 @@ async function saveCountForArticle(a,qtyValue){
   renderInventory();
   syncItem(item);
   toast("Quantité enregistrée : "+qty);
+
+  if(resetAfter){
+    $("searchInput").value="";
+    $("results").innerHTML="";
+    selectedArticle=null;
+    $("selected").classList.remove("show");
+    $("searchInput").focus();
+    $("searchInput").scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  if(resumeCamera && scannerStream && scannerPersistent){
+    setTimeout(resumeScanner,180);
+  }
   return true;
 }
 
@@ -442,10 +495,8 @@ function renderResults(list){
       const i=Number(btn.dataset.ok);
       const input=box.querySelector(`[data-qty="${i}"]`);
       const ok=await saveCountForArticle(list[i],input?.value);
-      if(ok){
-        input.blur();
+      if(ok && document.body.contains(btn)){
         btn.textContent="✓";
-        setTimeout(()=>btn.textContent="OK ✓",700);
       }
     });
   });
@@ -475,10 +526,10 @@ function runLookup({scan=false}={}){
 }
 
 async function saveCount(){
-  if(!selectedArticle)return;const qty=Number($("qtyInput").value);if(!Number.isFinite(qty)||qty<0){toast("Entrez une quantité valide.");$("qtyInput").focus();return}
-  const item={key:articleKey(selectedArticle),ean:selectedArticle.ean||"",numero_article:selectedArticle.numero_article||"",num_fournisseur:selectedArticle.num_fournisseur||"",denomination:selectedArticle.denomination||"",fournisseur:selectedArticle.fournisseur||"",fournisseur_id:selectedArticle.fournisseur_id||null,quantite:qty,updated_at:nowIso(),local_pending:true};
-  inventory.set(item.key,item);saveLocalInventory();renderInventory();syncItem(item);toast("Quantité enregistrée : "+qty);
-  selectedArticle=null;$("selected").classList.remove("show");$("searchInput").value="";$("results").innerHTML="";$("searchInput").focus();
+  if(!selectedArticle)return;
+  const a=selectedArticle;
+  const qty=$("qtyInput").value;
+  await saveCountForArticle(a,qty,{resetAfter:true,resumeCamera:true});
 }
 
 function exportExcel(){
@@ -753,16 +804,70 @@ function lockAdminPanel(){
 
 async function startScanner(){
   if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible sur ce navigateur.");return}
-  $("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";
+  scannerPersistent=true;
+
+  // Si la caméra est déjà active, on la réutilise sans la redémarrer.
+  if(scannerStream){
+    resumeScanner();
+    return;
+  }
+
+  $("scannerModal").style.display="block";
+  $("scannerMsg").textContent="Ouverture de la caméra…";
   try{
-    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});$("scannerVideo").srcObject=scannerStream;
-    if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge par ce navigateur. Utilisez un lecteur code-barres ou la recherche manuelle.";return}
-    const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]);const wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"].filter(x=>!supported.length||supported.includes(x));const detector=new BarcodeDetector({formats:wanted.length?wanted:undefined});
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+    $("scannerVideo").srcObject=scannerStream;
+    if(!("BarcodeDetector" in window)){
+      $("scannerMsg").textContent="Lecture automatique non prise en charge par ce navigateur. Utilisez un lecteur code-barres ou la recherche manuelle.";
+      return
+    }
+    const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]);
+    const wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"].filter(x=>!supported.length||supported.includes(x));
+    const detector=new BarcodeDetector({formats:wanted.length?wanted:undefined});
     $("scannerMsg").textContent="Placez le code-barres dans le cadre.";
-    const detect=async()=>{if(!scannerStream)return;try{const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw){closeScanner();$("searchInput").value=raw;runLookup({scan:true});return}}}catch{}scannerLoop=requestAnimationFrame(detect)};scannerLoop=requestAnimationFrame(detect)
-  }catch(err){$("scannerMsg").textContent="Accès caméra impossible. Vérifiez l’autorisation et que la page est ouverte en HTTPS."}
+    scannerPaused=false;
+
+    const detect=async()=>{
+      if(!scannerStream)return;
+      if(!scannerPaused){
+        try{
+          const codes=await detector.detect($("scannerVideo"));
+          if(codes.length){
+            const raw=cleanScanValue(codes[0].rawValue||"");
+            if(raw){
+              scannerPaused=true;
+              // On masque la caméra, mais on NE l'arrête PAS.
+              $("scannerModal").style.display="none";
+              $("searchInput").value=raw;
+              runLookup({scan:true});
+            }
+          }
+        }catch{}
+      }
+      scannerLoop=requestAnimationFrame(detect);
+    };
+    scannerLoop=requestAnimationFrame(detect);
+  }catch(err){
+    $("scannerMsg").textContent="Accès caméra impossible. Vérifiez l’autorisation et que la page est ouverte en HTTPS.";
+  }
 }
-function closeScanner(){if(scannerLoop)cancelAnimationFrame(scannerLoop);scannerLoop=null;if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}$("scannerVideo").srcObject=null;$("scannerModal").style.display="none"}
+
+function resumeScanner(){
+  if(!scannerStream)return;
+  scannerPaused=false;
+  $("scannerModal").style.display="block";
+  $("scannerMsg").textContent="Placez le code-barres suivant dans le cadre.";
+}
+
+function closeScanner(){
+  scannerPersistent=false;
+  scannerPaused=false;
+  if(scannerLoop)cancelAnimationFrame(scannerLoop);
+  scannerLoop=null;
+  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}
+  $("scannerVideo").srcObject=null;
+  $("scannerModal").style.display="none";
+}
 
 async function login(name){
   const clean=String(name||"").trim();if(clean.length<2){$("loginError").textContent="Entrez au moins 2 caractères.";return}
