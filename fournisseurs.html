@@ -241,6 +241,22 @@ input,select,button{font-family:inherit}
 #barcodeReader{width:100%;min-height:260px;background:#111;border-radius:10px;overflow:hidden}
 #barcodeReader video{object-fit:cover}
 #barcodeStatus{font-size:11px;color:#667085;text-align:center;margin:9px 2px 2px;line-height:1.4}
+/* Barre d’actions compacte */
+.controls{grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) 190px 175px auto!important}
+.controls .filter-empty{white-space:nowrap;font-size:11px;padding:0 8px!important;height:35px}
+.toolbar-actions{grid-column:1/-1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px}
+.toolbar-actions button{height:32px!important;min-height:32px!important;padding:0 11px!important;border-radius:6px!important;font-size:10px!important;font-weight:800!important;box-shadow:none!important;white-space:nowrap}
+.toolbar-actions .btn-refresh{background:#315f86}
+.toolbar-actions .btn-reset{background:#69737c}
+.toolbar-actions .btn-add{background:var(--brand);margin-left:auto}
+.toolbar-actions .btn-import{background:#b7791f}
+.toolbar-actions .btn-update{background:#9a671d}
+.toolbar-actions .btn-export{background:#217346}
+.toolbar-actions .btn-zip{background:#14532d}
+.toolbar-actions button:hover{filter:brightness(.95);transform:translateY(-1px)}
+@media(max-width:1000px){.controls{grid-template-columns:1fr 1fr!important}.toolbar-actions{grid-column:1/-1}.toolbar-actions .btn-add{margin-left:0}}
+@media(max-width:700px){.controls{grid-template-columns:1fr!important}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr}.toolbar-actions button{width:100%}.toolbar-actions .btn-add{margin-left:0}}
+
 @media(max-width:700px){
  .product-search-wrap #pq{padding-right:38px}
  .barcode-scan-btn{display:flex}
@@ -318,8 +334,16 @@ input,select,button{font-family:inherit}
 <option value="Fusion / absorption">Fusions / absorptions</option>
 <option value="Autre inactif">Autres inactifs</option>
 </select>
-<label style="display:flex;align-items:center;gap:6px;padding:8px"><input id="emptyOnly" type="checkbox" style="width:auto"> Sans catégorie (<b id="kEmpty">0</b>)</label>
-<button id="addSupplier" class="import-btn" type="button" disabled onclick="openSupplierEditor()">Ajouter un fournisseur</button><button onclick="loadSuppliersFromD1()" type="button">Actualiser</button><button onclick="resetAll()">Réinitialiser</button><button class="import-btn" onclick="supplierImportInput.click()">Importer fournisseurs Excel</button><button class="import-btn" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()">Mettre à jour toute la base articles</button><button class="export-btn" onclick="exportSuppliersExcel()">Exporter fournisseurs Excel</button><button class="all-export-btn" onclick="exportEverythingZip()">Exporter toute la base ZIP</button><input id="supplierImportInput" type="file" accept=".xlsx,.xls" hidden><input id="globalArticleImportInput" type="file" accept=".xlsx,.xls" hidden>
+<label class="filter-empty" style="display:flex;align-items:center;gap:6px"><input id="emptyOnly" type="checkbox" style="width:auto"> Sans catégorie (<b id="kEmpty">0</b>)</label>
+<div class="toolbar-actions">
+ <button class="btn-refresh" onclick="loadSuppliersFromD1()" type="button">↻ Actualiser</button>
+ <button class="btn-reset" onclick="resetAll()" type="button">Réinitialiser</button>
+ <button class="btn-import" onclick="supplierImportInput.click()" type="button">Importer fournisseurs</button>
+ <button class="btn-update" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()" type="button">Mettre à jour les articles</button>
+ <button class="btn-export" onclick="exportSuppliersExcel()" type="button">Exporter fournisseurs</button>
+ <button class="btn-zip" onclick="exportEverythingZip()" type="button">Exporter la base ZIP</button>
+ <button id="addSupplier" class="btn-add" type="button" disabled onclick="openSupplierEditor()">＋ Fournisseur</button>
+</div><input id="supplierImportInput" type="file" accept=".xlsx,.xls" hidden><input id="globalArticleImportInput" type="file" accept=".xlsx,.xls" hidden>
 </div><div id="stats" class="stats"></div></div>
 <div id="cards" class="cards"></div></div>
 <div id="barcodeModal" aria-hidden="true">
@@ -1913,7 +1937,25 @@ supplierForm.addEventListener("submit",async event=>{
  }catch(err){message.textContent=err.message}finally{button.disabled=false}
 });
 supplierEditor.addEventListener("close",()=>{supplierForm.elements.namedItem("password").value=""});
-pq.addEventListener("input",()=>{if(pq.value.trim())ensureProductArticles()});
+let lastMainExactEan="";
+async function openExactEanFromMain(){
+ const code=String(pq.value||"").trim();
+ if(!/^\d{8,14}$/.test(code)){lastMainExactEan="";return}
+ await ensureProductArticles();
+ if(String(pq.value||"").trim()!==code || lastMainExactEan===code)return;
+ for(let ix=0;ix<DATA.length;ix++){
+  const rows=ARTICLES[String(ix)]||[];
+  const hit=rows.find(r=>String(r[9]||"").trim()===code);
+  if(hit){
+   lastMainExactEan=code;
+   await openArticles(ix);
+   articleSearch.value=code;
+   renderArticles();
+   return;
+  }
+ }
+}
+pq.addEventListener("input",()=>{if(pq.value.trim()){ensureProductArticles();openExactEanFromMain()}else lastMainExactEan=""});
 
 loadSuppliersFromD1();
 loadStorageIndicator();
