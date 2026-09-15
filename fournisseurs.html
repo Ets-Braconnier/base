@@ -1402,8 +1402,20 @@ globalArticleImportInput.addEventListener("change",e=>{
    if(createNames.size){
     globalArticleImportBtn.disabled=true;globalArticleImportBtn.textContent="Création des fournisseurs…";
     const nouveaux=[...createNames].map(nom=>({nom,nom_actuel:nom,statut:"À vérifier",statut_source:"À vérifier",type_inactif:"",tva:"",pays:"",adresse:"",existence:"",source:"",note:"Créé automatiquement lors de l’import global des articles",categories:[]}));
-    const cr=await fetch(API_BASE+"/admin/fournisseurs/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({fournisseurs:nouveaux})});
-    const cj=await cr.json().catch(()=>({}));if(!cr.ok||!cj.ok)throw new Error(cj.erreur||("Création fournisseurs impossible — HTTP "+cr.status));
+    const supplierBatchSize=50;
+    for(let start=0;start<nouveaux.length;start+=supplierBatchSize){
+     const lot=nouveaux.slice(start,start+supplierBatchSize);
+     const numero=Math.floor(start/supplierBatchSize)+1;
+     const totalLots=Math.ceil(nouveaux.length/supplierBatchSize);
+     globalArticleImportBtn.textContent="Création fournisseurs… "+numero+"/"+totalLots;
+     const cr=await fetch(API_BASE+"/admin/fournisseurs/import",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Admin-Password":password},
+      body:JSON.stringify({fournisseurs:lot})
+     });
+     const cj=await cr.json().catch(()=>({}));
+     if(!cr.ok||!cj.ok)throw new Error(cj.erreur||("Création fournisseurs impossible — lot "+numero+"/"+totalLots+" — HTTP "+cr.status));
+    }
     await loadSuppliersFromD1();const aliases=loadSupplierAliases();
     for(const source of createNames){
      const exact=DATA.find(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity(source)||supplierIdentity(x.nom_actuel)===supplierIdentity(source));
