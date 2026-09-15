@@ -435,10 +435,10 @@ input,select,button{font-family:inherit}
 
 <style>
 #supplierMatchDialog{width:min(1050px,96vw);max-height:90vh;border:1px solid #dde2e6;border-radius:12px;padding:20px;color:#29343d}
-#supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr);gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select{width:100%;padding:7px}.match-count{text-align:right;font-weight:700}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
+#supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr);gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select,.match-row input{width:100%;padding:7px;border:1px solid #cbd4dc;border-radius:7px;font:inherit}.match-count{text-align:right;font-weight:700}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
 </style>
 <dialog id="supplierMatchDialog">
- <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Les propositions les plus probables sont placées en premier. Laisse « Ignorer » en cas de doute.</small></div>
+ <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Tape quelques lettres pour rechercher parmi TOUS les fournisseurs Cloudflare (ex. AUBIA → tape MOORIS). Les correspondances validées seront mémorisées pour les prochaines mises à jour. Laisse vide pour ignorer.</small></div>
  <div id="supplierMatchList" class="match-list"></div>
  <div class="match-actions"><button type="button" id="supplierMatchCancel">Annuler la mise à jour</button><button type="button" class="match-apply" id="supplierMatchApply">Utiliser ces correspondances</button></div>
 </dialog>
@@ -1196,31 +1196,60 @@ function getSupplierSuggestions(source,limit=5){
  out.sort((a,b)=>b.score-a.score);
  return out.slice(0,limit);
 }
+const LS_SUPPLIER_ALIASES="braconnier_supplier_aliases_v1";
+function loadSupplierAliases(){return readStoredJson(LS_SUPPLIER_ALIASES,{})||{}}
+function saveSupplierAliases(v){writeStoredJson(LS_SUPPLIER_ALIASES,v)}
+function supplierAliasKey(v){return supplierIdentity(v)||supplierCanonical(v)}
+function supplierById(id){return DATA.find(x=>Number(x._d1_id)===Number(id))||null}
+function supplierDisplayName(x){return x?(x.fournisseur_source||x.nom_actuel||("Fournisseur "+x._d1_id)):""}
+
 function chooseUnknownSupplierMappings(unknown){
  return new Promise(resolve=>{
   const dlg=document.getElementById("supplierMatchDialog"),list=document.getElementById("supplierMatchList"),info=document.getElementById("supplierMatchInfo");
   const entries=[...unknown.entries()].sort((a,b)=>b[1]-a[1]);
-  info.textContent=entries.reduce((s,x)=>s+x[1],0)+" article(s) / "+entries.length+" nom(s) à contrôler.";
+  info.textContent=entries.reduce((s,x)=>s+x[1],0)+" article(s) / "+entries.length+" nom(s) à contrôler. Recherche possible dans toute la base fournisseurs Cloudflare.";
   list.innerHTML="";
-  entries.forEach(([name,count],idx)=>{
+
+  const dl=document.createElement("datalist");dl.id="allCloudflareSuppliers";
+  const all=DATA.filter(x=>Number(x._d1_id)>0).map(x=>({id:Number(x._d1_id),name:supplierDisplayName(x)})).sort((a,b)=>a.name.localeCompare(b.name,"fr"));
+  all.forEach(x=>{const o=document.createElement("option");o.value=x.name;o.dataset.id=String(x.id);dl.append(o)});
+  list.append(dl);
+  const aliases=loadSupplierAliases();
+
+  entries.forEach(([name,count])=>{
    const row=document.createElement("div");row.className="match-row";
    const lab=document.createElement("div");lab.textContent=name||"(sans fournisseur)";
    const cnt=document.createElement("div");cnt.className="match-count";cnt.textContent=count+" art.";
-   const sel=document.createElement("select");sel.dataset.source=name;
-   sel.append(new Option("— Ignorer —",""));
+   const input=document.createElement("input");input.dataset.source=name;input.setAttribute("list","allCloudflareSuppliers");input.placeholder=name?"Rechercher un fournisseur Cloudflare…":"Sans fournisseur — laisser vide";
    if(name){
-    const suggestions=getSupplierSuggestions(name,6);
-    suggestions.forEach((x,i)=>sel.append(new Option((i===0?"★ ":"")+x.name+"  ("+Math.round(x.score*100)+"%)",String(x.id))));
-    // Préselection seulement si la proposition est très forte. Sinon validation humaine obligatoire.
-    if(suggestions[0]&&suggestions[0].score>=.72)sel.value=String(suggestions[0].id);
+    const savedId=aliases[supplierAliasKey(name)];
+    const saved=supplierById(savedId);
+    if(saved){input.value=supplierDisplayName(saved);input.dataset.selectedId=String(savedId)}
+    else{
+     const suggestions=getSupplierSuggestions(name,1);
+     if(suggestions[0]&&suggestions[0].score>=.72){input.value=suggestions[0].name;input.dataset.selectedId=String(suggestions[0].id)}
+    }
    }
-   row.append(lab,cnt,sel);list.append(row);
+   input.addEventListener("input",()=>{
+    const val=input.value.trim();const hit=all.find(x=>x.name.toLowerCase()===val.toLowerCase());
+    input.dataset.selectedId=hit?String(hit.id):"";
+   });
+   row.append(lab,cnt,input);list.append(row);
   });
+
   const cleanup=()=>{document.getElementById("supplierMatchApply").onclick=null;document.getElementById("supplierMatchCancel").onclick=null;};
   document.getElementById("supplierMatchCancel").onclick=()=>{cleanup();dlg.close();resolve(null)};
   document.getElementById("supplierMatchApply").onclick=()=>{
-   const map=new Map();list.querySelectorAll("select").forEach(sel=>{if(sel.value)map.set(sel.dataset.source,Number(sel.value));});
-   cleanup();dlg.close();resolve(map);
+   const map=new Map(),updatedAliases=loadSupplierAliases();let invalid=[];
+   list.querySelectorAll("input[data-source]").forEach(input=>{
+    const source=input.dataset.source,val=input.value.trim();if(!val)return;
+    let id=Number(input.dataset.selectedId||0);
+    if(!id){const hit=all.find(x=>x.name.toLowerCase()===val.toLowerCase());if(hit)id=hit.id}
+    if(!id){invalid.push(source+" → "+val);return}
+    map.set(source,id);if(source)updatedAliases[supplierAliasKey(source)]=id;
+   });
+   if(invalid.length){alert("Certaines valeurs ne correspondent pas exactement à un fournisseur Cloudflare. Choisis un nom dans la liste proposée :\n\n"+invalid.slice(0,8).join("\n"));return}
+   saveSupplierAliases(updatedAliases);cleanup();dlg.close();resolve(map);
   };
   dlg.showModal();
  });
@@ -1276,7 +1305,10 @@ globalArticleImportInput.addEventListener("change",e=>{
      const i=cols[key];
      if(i>=0)o[key]=String(r[i]??"").trim();
     }
-    const supplier=matchSupplier(supplierName);
+    const aliases=loadSupplierAliases();
+    const rememberedId=aliases[supplierAliasKey(supplierName)];
+    const remembered=rememberedId?supplierById(rememberedId):null;
+    const supplier=remembered?{id:Number(remembered._d1_id),name:supplierDisplayName(remembered)}:matchSupplier(supplierName);
     if(!supplier){
      unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
      pendingUnknown.push({supplierName,article:o});
@@ -1768,7 +1800,7 @@ fileDropZone.addEventListener("drop",e=>uploadSupplierFiles(e.dataTransfer.files
 let currentArticleSupplier=-1,currentArticleRows=[],articleSortCol=-1,articleSortAsc=true;const ARTICLE_COLS=[0,1,2,4,5,6,7,8,9];
 
 function closeArticles(){articleModal.classList.remove("open");articleModal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
-function renderArticles(){const q=n(articleSearch.value);let rows=currentArticleRows.filter(r=>!q||smartMatch(articleSearch.value,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
+function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactEan=currentArticleRows.filter(r=>n(r[9]||"")===q);rows=exactEan.length?exactEan:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
 articleSearch.addEventListener("input",renderArticles);document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 let API_CONNECTED=false;
