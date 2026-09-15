@@ -1370,7 +1370,7 @@ globalArticleImportInput.addEventListener("change",e=>{
    if(unknown.size){
     const manualChoice=await chooseUnknownSupplierMappings(unknown);
     if(manualChoice===null)return;
-    const manualMap=manualChoice.map;createNames=manualChoice.createNames;
+    const manualMap=manualChoice.map;createNames=new Set([...createNames,...manualChoice.createNames]);
     for(const item of pendingUnknown){
      const id=manualMap.get(item.supplierName);if(!id)continue;
      const d=DATA.find(x=>Number(x._d1_id)===id);
