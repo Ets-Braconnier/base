@@ -459,10 +459,10 @@ input,select,button{font-family:inherit}
 
 <style>
 #supplierMatchDialog{width:min(1050px,96vw);max-height:90vh;border:1px solid #dde2e6;border-radius:12px;padding:20px;color:#29343d}
-#supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr);gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select,.match-row input{width:100%;padding:7px;border:1px solid #cbd4dc;border-radius:7px;font:inherit}.match-count{text-align:right;font-weight:700}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
+#supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr) 110px;gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select,.match-row input{width:100%;padding:7px;border:1px solid #cbd4dc;border-radius:7px;font:inherit}.match-count{text-align:right;font-weight:700}.match-create{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#b35f00;white-space:nowrap}.match-create input{width:auto!important;accent-color:#f47b00}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
 </style>
 <dialog id="supplierMatchDialog">
- <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Tape quelques lettres pour rechercher parmi TOUS les fournisseurs Cloudflare (ex. AUBIA → tape MOORIS). Les correspondances validées seront mémorisées pour les prochaines mises à jour. Laisse vide pour ignorer.</small></div>
+ <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Tape quelques lettres pour rechercher parmi TOUS les fournisseurs Cloudflare (ex. AUBIA → tape MOORIS). Les correspondances validées seront mémorisées pour les prochaines mises à jour. Si le fournisseur n’existe pas, coche « Créer » pour le créer automatiquement dans Cloudflare avant l’import. Laisse vide pour ignorer.</small></div>
  <div id="supplierMatchList" class="match-list"></div>
  <div class="match-actions"><button type="button" id="supplierMatchCancel">Annuler la mise à jour</button><button type="button" class="match-apply" id="supplierMatchApply">Utiliser ces correspondances</button></div>
 </dialog>
@@ -1254,26 +1254,31 @@ function chooseUnknownSupplierMappings(unknown){
      if(suggestions[0]&&suggestions[0].score>=.72){input.value=suggestions[0].name;input.dataset.selectedId=String(suggestions[0].id)}
     }
    }
+   const createLab=document.createElement("label");createLab.className="match-create";
+   const createBox=document.createElement("input");createBox.type="checkbox";createBox.dataset.createSource=name;createBox.disabled=!name;
+   createBox.addEventListener("change",()=>{if(createBox.checked){input.value="";input.dataset.selectedId="";}});
+   createLab.append(createBox,document.createTextNode("Créer"));
    input.addEventListener("input",()=>{
     const val=input.value.trim();const hit=all.find(x=>x.name.toLowerCase()===val.toLowerCase());
-    input.dataset.selectedId=hit?String(hit.id):"";
+    input.dataset.selectedId=hit?String(hit.id):"";if(val)createBox.checked=false;
    });
-   row.append(lab,cnt,input);list.append(row);
+   row.append(lab,cnt,input,createLab);list.append(row);
   });
 
   const cleanup=()=>{document.getElementById("supplierMatchApply").onclick=null;document.getElementById("supplierMatchCancel").onclick=null;};
   document.getElementById("supplierMatchCancel").onclick=()=>{cleanup();dlg.close();resolve(null)};
   document.getElementById("supplierMatchApply").onclick=()=>{
-   const map=new Map(),updatedAliases=loadSupplierAliases();let invalid=[];
+   const map=new Map(),createNames=new Set(),updatedAliases=loadSupplierAliases();let invalid=[];
+   list.querySelectorAll("input[data-create-source]").forEach(box=>{if(box.checked&&box.dataset.createSource)createNames.add(box.dataset.createSource)});
    list.querySelectorAll("input[data-source]").forEach(input=>{
-    const source=input.dataset.source,val=input.value.trim();if(!val)return;
+    const source=input.dataset.source,val=input.value.trim();if(createNames.has(source)||!val)return;
     let id=Number(input.dataset.selectedId||0);
     if(!id){const hit=all.find(x=>x.name.toLowerCase()===val.toLowerCase());if(hit)id=hit.id}
     if(!id){invalid.push(source+" → "+val);return}
     map.set(source,id);if(source)updatedAliases[supplierAliasKey(source)]=id;
    });
    if(invalid.length){alert("Certaines valeurs ne correspondent pas exactement à un fournisseur Cloudflare. Choisis un nom dans la liste proposée :\n\n"+invalid.slice(0,8).join("\n"));return}
-   saveSupplierAliases(updatedAliases);cleanup();dlg.close();resolve(map);
+   saveSupplierAliases(updatedAliases);cleanup();dlg.close();resolve({map,createNames});
   };
   dlg.showModal();
  });
@@ -1342,9 +1347,11 @@ globalArticleImportInput.addEventListener("change",e=>{
     groups.get(supplier.id).articles.push(o);
    }
 
+   let createNames=new Set();
    if(unknown.size){
-    const manualMap=await chooseUnknownSupplierMappings(unknown);
-    if(manualMap===null)return;
+    const manualChoice=await chooseUnknownSupplierMappings(unknown);
+    if(manualChoice===null)return;
+    const manualMap=manualChoice.map;createNames=manualChoice.createNames;
     for(const item of pendingUnknown){
      const id=manualMap.get(item.supplierName);if(!id)continue;
      const d=DATA.find(x=>Number(x._d1_id)===id);
@@ -1354,16 +1361,17 @@ globalArticleImportInput.addEventListener("change",e=>{
     }
    }
 
-   if(!groups.size)throw new Error("Aucun fournisseur du fichier ne correspond aux fournisseurs présents dans Cloudflare D1.");
-
-   const matched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
-   const ignored=validRows-matched;
+   const preMatched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
+   const createArticleCount=pendingUnknown.filter(x=>createNames.has(x.supplierName)).length;
+   if(!groups.size&&!createNames.size)throw new Error("Aucun fournisseur du fichier ne correspond aux fournisseurs présents dans Cloudflare D1.");
+   const ignored=validRows-preMatched-createArticleCount;
    let warning=ignored?"\n\n"+ignored+" article(s) restent volontairement ignoré(s) car aucune correspondance n'a été validée.":"";
+   if(createNames.size)warning+="\n\n"+createNames.size+" nouveau(x) fournisseur(s) seront créés automatiquement ("+createArticleCount+" article(s)).";
 
    if(!confirm(
     "Mise à jour globale des articles\n\n"+
     validRows+" article(s) lu(s)\n"+
-    matched+" article(s) rattaché(s) à "+groups.size+" fournisseur(s) Cloudflare."+
+    (preMatched+createArticleCount)+" article(s) rattaché(s) à "+(groups.size+createNames.size)+" fournisseur(s) Cloudflare (existants + à créer)."+
     warning+
     "\n\nLes articles existants seront mis à jour/considérés inchangés et les nouveaux seront ajoutés.\n\nContinuer ?"
    ))return;
@@ -1372,6 +1380,22 @@ globalArticleImportInput.addEventListener("change",e=>{
    if(password===null)return;
    if(!password)throw new Error("Mot de passe administrateur requis.");
 
+   if(createNames.size){
+    globalArticleImportBtn.disabled=true;globalArticleImportBtn.textContent="Création des fournisseurs…";
+    const nouveaux=[...createNames].map(nom=>({nom,nom_actuel:nom,statut:"À vérifier",statut_source:"À vérifier",type_inactif:"",tva:"",pays:"",adresse:"",existence:"",source:"",note:"Créé automatiquement lors de l’import global des articles",categories:[]}));
+    const cr=await fetch(API_BASE+"/admin/fournisseurs/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({fournisseurs:nouveaux})});
+    const cj=await cr.json().catch(()=>({}));if(!cr.ok||!cj.ok)throw new Error(cj.erreur||("Création fournisseurs impossible — HTTP "+cr.status));
+    await loadSuppliersFromD1();const aliases=loadSupplierAliases();
+    for(const source of createNames){
+     const exact=DATA.find(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity(source)||supplierIdentity(x.nom_actuel)===supplierIdentity(source));
+     if(!exact)throw new Error("Le fournisseur « "+source+" » a été créé mais n’a pas pu être retrouvé dans Cloudflare.");
+     const id=Number(exact._d1_id);aliases[supplierAliasKey(source)]=id;
+     for(const item of pendingUnknown){if(item.supplierName!==source)continue;if(!groups.has(id))groups.set(id,{name:supplierDisplayName(exact),articles:[]});groups.get(id).articles.push(item.article)}
+    }
+    saveSupplierAliases(aliases);
+   }
+
+   const matched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
    globalArticleImportBtn.disabled=true;
 
    let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;
