@@ -597,6 +597,7 @@ emptyOnly.addEventListener("change",render);
 
 /* ===== Scanner code-barres mobile ===== */
 let barcodeScanner=null,barcodeStarting=false,barcodeDetected=false;
+
 const BARCODE_FORMATS=()=>{
  if(typeof Html5QrcodeSupportedFormats==="undefined")return undefined;
  return [
@@ -606,19 +607,74 @@ const BARCODE_FORMATS=()=>{
   Html5QrcodeSupportedFormats.ITF
  ];
 };
+
+function barcodeErrorMessage(err){
+ const name=String(err?.name||"");
+ const message=String(err?.message||err||"");
+ if(location.protocol!=="https:" && location.hostname!=="localhost")
+  return "La caméra nécessite une page HTTPS.";
+ if(name==="NotAllowedError" || /permission|denied|notallowed/i.test(message))
+  return "L’accès à la caméra est refusé. Vérifie l’autorisation caméra du navigateur pour ce site.";
+ if(name==="NotFoundError" || /not.?found|no camera|device.*found/i.test(message))
+  return "Aucune caméra utilisable n’a été détectée sur ce téléphone.";
+ if(name==="NotReadableError" || /not.?readable|could not start|trackstart|in use/i.test(message))
+  return "La caméra est déjà utilisée ou momentanément indisponible. Ferme les autres applications utilisant la caméra puis réessaie.";
+ if(name==="OverconstrainedError" || /constraint|overconstrained/i.test(message))
+  return "La caméra arrière n’a pas pu être sélectionnée. Réessaie : le site tentera une autre caméra.";
+ return "Impossible d’ouvrir la caméra ("+(name||"erreur caméra")+"). Ferme puis rouvre le scanner et réessaie.";
+}
+
+async function chooseBarcodeCamera(){
+ // getCameras() déclenche/valide l'accès puis fournit les vraies caméras du téléphone.
+ let cameras=[];
+ try{ cameras=await Html5Qrcode.getCameras(); }catch(e){ console.warn("Liste caméras:",e); }
+ if(!cameras || !cameras.length) return null;
+
+ // Privilégier explicitement une caméra arrière quand son libellé est disponible.
+ const rear=cameras.find(c=>/back|rear|environment|arrière|arriere|world/i.test(c.label||""));
+ return (rear||cameras[cameras.length-1]||cameras[0]).id;
+}
+
 async function openBarcodeScanner(){
  const modal=document.getElementById("barcodeModal"),status=document.getElementById("barcodeStatus");
  modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
- status.textContent="Ouverture de la caméra…";barcodeDetected=false;
+ status.textContent="Recherche de la caméra arrière…";barcodeDetected=false;
+
  if(typeof Html5Qrcode==="undefined"){
-  status.textContent="Le module de scan n’a pas pu être chargé. Vérifie la connexion Internet puis recharge la page.";return;
+  status.textContent="Le module de scan n’a pas pu être chargé. Vérifie la connexion Internet puis recharge la page.";
+  return;
  }
- if(barcodeStarting)return;barcodeStarting=true;
+ if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+  status.textContent="Ce navigateur ne permet pas l’accès à la caméra depuis cette page.";
+  return;
+ }
+ if(barcodeStarting)return;
+ barcodeStarting=true;
+
  try{
+  // Nettoyer une éventuelle ancienne instance avant de redémarrer.
+  if(barcodeScanner){
+   try{if(barcodeScanner.isScanning)await barcodeScanner.stop()}catch(e){}
+   try{barcodeScanner.clear()}catch(e){}
+   barcodeScanner=null;
+  }
+  document.getElementById("barcodeReader").innerHTML="";
+
+  const cameraId=await chooseBarcodeCamera();
   barcodeScanner=new Html5Qrcode("barcodeReader",{formatsToSupport:BARCODE_FORMATS(),verbose:false});
-  const config={fps:12,qrbox:(vw,vh)=>{const w=Math.min(Math.floor(vw*.88),420),h=Math.min(Math.floor(vh*.38),150);return{width:Math.max(180,w),height:Math.max(90,h)}},aspectRatio:1.777778};
-  await barcodeScanner.start({facingMode:{ideal:"environment"}},config,async decodedText=>{
-   if(barcodeDetected)return;barcodeDetected=true;
+
+  const config={
+   fps:10,
+   qrbox:(vw,vh)=>{
+    const w=Math.min(Math.floor(vw*.88),420);
+    const h=Math.min(Math.floor(vh*.38),150);
+    return {width:Math.max(180,w),height:Math.max(90,h)};
+   }
+  };
+
+  const onSuccess=async decodedText=>{
+   if(barcodeDetected)return;
+   barcodeDetected=true;
    status.textContent="Code détecté : "+decodedText;
    const code=String(decodedText||"").trim();
    await closeBarcodeScanner();
@@ -627,25 +683,49 @@ async function openBarcodeScanner(){
     pq.dispatchEvent(new Event("input",{bubbles:true}));
     pq.focus();
    }
-  },()=>{});
-  status.textContent="Place le code-barres dans le cadre. La détection est automatique.";
+  };
+
+  // Si getCameras() a trouvé une caméra, utiliser son deviceId.
+  // Sinon fallback sur facingMode exact puis ideal.
+  if(cameraId){
+   await barcodeScanner.start(cameraId,config,onSuccess,()=>{});
+  }else{
+   try{
+    await barcodeScanner.start({facingMode:"environment"},config,onSuccess,()=>{});
+   }catch(firstErr){
+    console.warn("Caméra arrière directe:",firstErr);
+    await barcodeScanner.start({facingMode:{ideal:"environment"}},config,onSuccess,()=>{});
+   }
+  }
+  status.textContent="Caméra ouverte. Place le code-barres dans le cadre.";
  }catch(err){
   console.error("Scanner code-barres:",err);
+  try{if(barcodeScanner)barcodeScanner.clear()}catch(e){}
   barcodeScanner=null;
-  status.textContent=(location.protocol!=="https:"&&location.hostname!=="localhost")
-   ?"La caméra nécessite une page HTTPS."
-   :"Impossible d’ouvrir la caméra. Autorise l’accès à la caméra dans le navigateur puis réessaie.";
- }finally{barcodeStarting=false}
+  status.textContent=barcodeErrorMessage(err);
+ }finally{
+  barcodeStarting=false;
+ }
 }
+
 async function closeBarcodeScanner(){
  const modal=document.getElementById("barcodeModal");
  modal.classList.remove("open");modal.setAttribute("aria-hidden","true");document.body.style.overflow="";
  const scanner=barcodeScanner;barcodeScanner=null;barcodeStarting=false;
- if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){console.warn(e)}try{scanner.clear()}catch(e){}}
- const reader=document.getElementById("barcodeReader");if(reader)reader.innerHTML="";
+ if(scanner){
+  try{if(scanner.isScanning)await scanner.stop()}catch(e){console.warn(e)}
+  try{scanner.clear()}catch(e){}
+ }
+ const reader=document.getElementById("barcodeReader");
+ if(reader)reader.innerHTML="";
 }
-document.getElementById("barcodeModal").addEventListener("click",e=>{if(e.target.id==="barcodeModal")closeBarcodeScanner()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("barcodeModal").classList.contains("open"))closeBarcodeScanner()});
+
+document.getElementById("barcodeModal").addEventListener("click",e=>{
+ if(e.target.id==="barcodeModal")closeBarcodeScanner();
+});
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&document.getElementById("barcodeModal").classList.contains("open"))closeBarcodeScanner();
+});
 
 /* Export Excel XLSX autonome : aucune bibliothèque externe nécessaire. */
 function xXml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
