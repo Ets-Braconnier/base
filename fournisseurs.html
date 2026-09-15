@@ -1347,7 +1347,26 @@ globalArticleImportInput.addEventListener("change",e=>{
     groups.get(supplier.id).articles.push(o);
    }
 
+   // Tous les articles dont le champ fournisseur est vide sont automatiquement
+   // rattachés à un fournisseur Cloudflare unique nommé « Sans fournisseur ».
+   const blankSupplierItems=pendingUnknown.filter(x=>!String(x.supplierName||"").trim());
+   if(blankSupplierItems.length){
+    let sf=DATA.find(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity("Sans fournisseur")||supplierIdentity(x.nom_actuel)===supplierIdentity("Sans fournisseur"));
+    if(sf){
+     const id=Number(sf._d1_id);
+     if(!groups.has(id))groups.set(id,{name:supplierDisplayName(sf),articles:[]});
+     for(const item of blankSupplierItems)groups.get(id).articles.push(item.article);
+     unknown.delete("");
+     for(let i=pendingUnknown.length-1;i>=0;i--)if(!String(pendingUnknown[i].supplierName||"").trim())pendingUnknown.splice(i,1);
+    }
+   }
+
    let createNames=new Set();
+   if(blankSupplierItems.length&&!DATA.some(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity("Sans fournisseur")||supplierIdentity(x.nom_actuel)===supplierIdentity("Sans fournisseur"))){
+    createNames.add("Sans fournisseur");
+    for(const item of blankSupplierItems)item.supplierName="Sans fournisseur";
+    unknown.delete("");
+   }
    if(unknown.size){
     const manualChoice=await chooseUnknownSupplierMappings(unknown);
     if(manualChoice===null)return;
