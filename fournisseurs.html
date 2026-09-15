@@ -319,7 +319,7 @@ input,select,button{font-family:inherit}
 <option value="Autre inactif">Autres inactifs</option>
 </select>
 <label style="display:flex;align-items:center;gap:6px;padding:8px"><input id="emptyOnly" type="checkbox" style="width:auto"> Sans catégorie (<b id="kEmpty">0</b>)</label>
-<button id="addSupplier" class="import-btn" type="button" disabled onclick="openSupplierEditor()">Ajouter un fournisseur</button><button onclick="loadSuppliersFromD1()" type="button">Actualiser</button><button onclick="resetAll()">Réinitialiser</button><button class="import-btn" onclick="supplierImportInput.click()">Importer fournisseurs Excel</button><button class="export-btn" onclick="exportSuppliersExcel()">Exporter fournisseurs Excel</button><button class="all-export-btn" onclick="exportEverythingZip()">Exporter toute la base ZIP</button><input id="supplierImportInput" type="file" accept=".xlsx,.xls" hidden>
+<button id="addSupplier" class="import-btn" type="button" disabled onclick="openSupplierEditor()">Ajouter un fournisseur</button><button onclick="loadSuppliersFromD1()" type="button">Actualiser</button><button onclick="resetAll()">Réinitialiser</button><button class="import-btn" onclick="supplierImportInput.click()">Importer fournisseurs Excel</button><button class="import-btn" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()">Mettre à jour toute la base articles</button><button class="export-btn" onclick="exportSuppliersExcel()">Exporter fournisseurs Excel</button><button class="all-export-btn" onclick="exportEverythingZip()">Exporter toute la base ZIP</button><input id="supplierImportInput" type="file" accept=".xlsx,.xls" hidden><input id="globalArticleImportInput" type="file" accept=".xlsx,.xls" hidden>
 </div><div id="stats" class="stats"></div></div>
 <div id="cards" class="cards"></div></div>
 <div id="barcodeModal" aria-hidden="true">
@@ -1074,6 +1074,169 @@ supplierImportInput.addEventListener("change",e=>{
  });
 
  e.target.value="";
+});
+
+
+const globalArticleImportInput=document.getElementById("globalArticleImportInput");
+const globalArticleImportBtn=document.getElementById("globalArticleImportBtn");
+
+function supplierIdentity(v){
+ return n(String(v||"")).replace(/[^a-z0-9]+/g,"");
+}
+
+globalArticleImportInput.addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+
+ readExcelFile(file,async a=>{
+  const oldText=globalArticleImportBtn.textContent;
+  try{
+   if(a.length<2)throw new Error("Le fichier ne contient aucun article.");
+
+   const h=a[0].map(normHeader);
+   const find=(...names)=>{
+    for(const z of names){
+     const i=h.indexOf(normHeader(z));
+     if(i>=0)return i;
+    }
+    return -1;
+   };
+
+   const cols={
+    numero_article:find("N° d'article","S_CLE1"),
+    num_fournisseur:find("Num fournisseur","REF_FOU","Ref fournisseur"),
+    nom_fournisseur:find("Nomfour","Fournisseur"),
+    denomination:find("Dénomination","Description FR","S_MODELE"),
+    unite:find("Unité"),
+    emballage:find("Emballage"),
+    groupe_principal:find("Groupe principal"),
+    sous_groupe:find("Sous-groupe"),
+    ean:find("Code EAN","S_CLE2")
+   };
+
+   if(cols.numero_article<0)throw new Error("Colonne N° d'article introuvable.");
+   if(cols.nom_fournisseur<0)throw new Error("Colonne Nomfour introuvable : elle est nécessaire pour répartir les articles.");
+
+   if(!DATA.length)await loadSuppliersFromD1();
+
+   const supplierMap=new Map();
+   for(const x of DATA){
+    const id=Number(x._d1_id);
+    if(!Number.isInteger(id)||id<=0)continue;
+    for(const label of [x.fournisseur_source,x.nom_actuel]){
+     const key=supplierIdentity(label);
+     if(key&&!supplierMap.has(key))supplierMap.set(key,{id,name:x.fournisseur_source||label});
+    }
+   }
+
+   const groups=new Map(),unknown=new Map();
+   let validRows=0;
+   for(const r of a.slice(1)){
+    const numero=String(r[cols.numero_article]??"").trim();
+    if(!numero)continue;
+    validRows++;
+
+    const supplierName=String(r[cols.nom_fournisseur]??"").trim();
+    const supplier=supplierMap.get(supplierIdentity(supplierName));
+    if(!supplier){
+     unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
+     continue;
+    }
+
+    const o={numero_article:numero};
+    for(const key of ["num_fournisseur","nom_fournisseur","denomination","unite","emballage","groupe_principal","sous_groupe","ean"]){
+     const i=cols[key];
+     if(i>=0)o[key]=String(r[i]??"").trim();
+    }
+    if(!groups.has(supplier.id))groups.set(supplier.id,{name:supplier.name,articles:[]});
+    groups.get(supplier.id).articles.push(o);
+   }
+
+   if(!groups.size)throw new Error("Aucun fournisseur du fichier ne correspond aux fournisseurs présents dans Cloudflare D1.");
+
+   const matched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
+   let warning="";
+   if(unknown.size){
+    const top=[...unknown.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12)
+      .map(([name,count])=>"• "+(name||"(sans fournisseur)")+" : "+count).join("\n");
+    warning="\n\nATTENTION : "+(validRows-matched)+" article(s) appartiennent à "+unknown.size+
+      " fournisseur(s) non reconnus et ne seront pas importés.\n\nExemples :\n"+top;
+   }
+
+   if(!confirm(
+    "Mise à jour globale des articles\n\n"+
+    validRows+" article(s) lu(s)\n"+
+    matched+" article(s) rattaché(s) à "+groups.size+" fournisseur(s) Cloudflare."+
+    warning+
+    "\n\nLes articles existants seront mis à jour/considérés inchangés et les nouveaux seront ajoutés.\n\nContinuer ?"
+   ))return;
+
+   const password=prompt("Mot de passe administrateur pour mettre à jour toute la base articles Cloudflare D1 :");
+   if(password===null)return;
+   if(!password)throw new Error("Mot de passe administrateur requis.");
+
+   globalArticleImportBtn.disabled=true;
+
+   let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;
+   let done=0;
+   const entries=[...groups.entries()];
+   const total=matched;
+   const batchSize=100;
+
+   for(let gi=0;gi<entries.length;gi++){
+    const [fournisseurId,group]=entries[gi];
+
+    for(let pos=0;pos<group.articles.length;pos+=batchSize){
+     const lot=group.articles.slice(pos,pos+batchSize);
+     globalArticleImportBtn.textContent="Mise à jour… "+Math.min(done+lot.length,total)+" / "+total;
+
+     const response=await fetch(API_BASE+"/admin/articles/import",{
+      method:"POST",
+      headers:{
+       "Content-Type":"application/json",
+       "X-Admin-Password":password
+      },
+      body:JSON.stringify({fournisseur_id:Number(fournisseurId),articles:lot})
+     });
+
+     const result=await response.json().catch(()=>({}));
+     if(!response.ok||!result.ok){
+      throw new Error(group.name+" : "+(result.erreur||("Erreur HTTP "+response.status)));
+     }
+
+     recus+=Number(result.recus||0);
+     ajoutes+=Number(result.ajoutes||0);
+     modifies+=Number(result.modifies||0);
+     inchanges+=Number(result.inchanges||0);
+     ignores+=Number(result.ignores||0);
+     done+=lot.length;
+    }
+   }
+
+   await loadD1Data();
+
+   let finalMessage=
+    "Mise à jour globale terminée.\n\n"+
+    recus+" ligne(s) traitée(s)\n"+
+    ajoutes+" article(s) ajouté(s)\n"+
+    modifies+" article(s) modifié(s)\n"+
+    inchanges+" article(s) inchangé(s)\n"+
+    ignores+" ligne(s) ignorée(s)";
+
+   if(unknown.size){
+    finalMessage+="\n\n"+(validRows-matched)+" article(s) non importé(s), car leur fournisseur n'existe pas encore dans la base fournisseurs Cloudflare.";
+   }
+   alert(finalMessage);
+
+  }catch(err){
+   console.error(err);
+   alert("Mise à jour globale impossible : "+err.message);
+  }finally{
+   globalArticleImportBtn.disabled=false;
+   globalArticleImportBtn.textContent=oldText;
+   e.target.value="";
+  }
+ });
 });
 
 articleImportInput.addEventListener("change",e=>{
