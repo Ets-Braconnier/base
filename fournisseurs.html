@@ -623,7 +623,7 @@ document.querySelectorAll(".mini-filter").forEach(el=>el.addEventListener("click
  render();
 }));
 fq.addEventListener("input",render);
-pq.addEventListener("input",render);
+pq.addEventListener("input",()=>{const clean=pq.value.replace(/#/g,"");if(clean!==pq.value)pq.value=clean;render()});
 sq.addEventListener("change",()=>{if(sq.value!=="Inactif confirmé / signalé")inactiveFilter.value="";render()});
 inactiveFilter.addEventListener("change",()=>{if(inactiveFilter.value)sq.value="Inactif confirmé / signalé";render()});
 emptyOnly.addEventListener("change",render);
@@ -1825,7 +1825,7 @@ let currentArticleSupplier=-1,currentArticleRows=[],articleSortCol=-1,articleSor
 
 function closeArticles(){articleModal.classList.remove("open");articleModal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
 function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactEan=currentArticleRows.filter(r=>n(r[9]||"")===q);rows=exactEan.length?exactEan:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
-articleSearch.addEventListener("input",renderArticles);document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
+articleSearch.addEventListener("input",()=>{const clean=articleSearch.value.replace(/#/g,"");if(clean!==articleSearch.value)articleSearch.value=clean;renderArticles()});document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 let API_CONNECTED=false;
 function rebuildProductSearchUnits(){PRODUCT_SEARCH_UNITS=DATA.map((x,ix)=>{const units=[];for(const c of (x.categories||[]))if(c)units.push(c);for(const r of (ARTICLES[String(ix)]||[])){const u=ARTICLE_SEARCH_COLS.map(c=>r[c]||"").join(" ");if(u.trim())units.push(u)}return units})}
@@ -1939,10 +1939,10 @@ supplierForm.addEventListener("submit",async event=>{
 supplierEditor.addEventListener("close",()=>{supplierForm.elements.namedItem("password").value=""});
 let lastMainExactEan="";
 async function openExactEanFromMain(){
- const code=String(pq.value||"").trim();
+ const code=String(pq.value||"").replace(/#/g,"").trim();
  if(!/^\d{8,14}$/.test(code)){lastMainExactEan="";return}
  await ensureProductArticles();
- if(String(pq.value||"").trim()!==code || lastMainExactEan===code)return;
+ if(String(pq.value||"").replace(/#/g,"").trim()!==code || lastMainExactEan===code)return;
  for(let ix=0;ix<DATA.length;ix++){
   const rows=ARTICLES[String(ix)]||[];
   const hit=rows.find(r=>String(r[9]||"").trim()===code);
