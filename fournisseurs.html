@@ -1084,6 +1084,76 @@ function supplierIdentity(v){
  return n(String(v||"")).replace(/[^a-z0-9]+/g,"");
 }
 
+// Normalisation renforcée des noms fournisseurs pour les mises à jour globales.
+// Elle tolère notamment SA/NV/BV/SRL/BVBA, ponctuation, accents et quelques variantes usuelles.
+function supplierWords(v){
+ const aliases={licht:"light",belgie:"belgium",belgië:"belgium"};
+ const legal=new Set(["sa","nv","bv","bvba","sprl","srl","sc","scrl","snc","sas","sasu","gmbh","ag","ltd","limited","inc","spa","srls"]);
+ const generic=new Set(["ets","etablissement","etablissements","company","compagnie","group","groupe"]);
+ return n(String(v||""))
+  .replace(/&/g," et ")
+  .replace(/[^a-z0-9]+/g," ")
+  .trim().split(/\s+/).filter(Boolean)
+  .map(w=>aliases[w]||w)
+  .filter(w=>!legal.has(w)&&!generic.has(w));
+}
+function supplierCanonical(v){ return supplierWords(v).join(""); }
+function supplierDistinctiveWords(v){
+ const weak=new Set(["belgium","belgique","belgie","benelux","europe","international","distribution","industrie","industries","trading","service","services"]);
+ return supplierWords(v).filter(w=>!weak.has(w)&&w.length>=3);
+}
+function buildSmartSupplierMatcher(data){
+ const exact=new Map(), candidates=[];
+ for(const x of data){
+  const id=Number(x._d1_id);
+  if(!Number.isInteger(id)||id<=0)continue;
+  const labels=[x.fournisseur_source,x.nom_actuel].filter(Boolean);
+  const item={id,name:x.fournisseur_source||x.nom_actuel||("Fournisseur "+id),labels};
+  candidates.push(item);
+  for(const label of labels){
+   for(const key of [supplierIdentity(label),supplierCanonical(label)]){
+    if(key&&!exact.has(key))exact.set(key,item);
+   }
+  }
+ }
+ return function(value){
+  const raw=String(value||"").trim();
+  if(!raw)return null;
+  const direct=exact.get(supplierIdentity(raw))||exact.get(supplierCanonical(raw));
+  if(direct)return direct;
+
+  const src=supplierDistinctiveWords(raw);
+  if(!src.length)return null;
+  const srcSet=new Set(src);
+  const scored=[];
+  for(const item of candidates){
+   let best=0;
+   for(const label of item.labels){
+    const dst=supplierDistinctiveWords(label);
+    if(!dst.length)continue;
+    const common=dst.filter(w=>srcSet.has(w));
+    const dstInSrc=common.length===dst.length;
+    const srcInDst=common.length===src.length;
+    const strong=common.some(w=>w.length>=5);
+    if((dstInSrc||srcInDst)&&strong){
+     best=Math.max(best,0.96-(Math.abs(src.length-dst.length)*0.01));
+     continue;
+    }
+    const union=new Set([...src,...dst]).size;
+    const j=union?common.length/union:0;
+    if(strong&&common.length>=1)best=Math.max(best,j);
+   }
+   if(best>0)scored.push({item,score:best});
+  }
+  scored.sort((a,b)=>b.score-a.score);
+  if(!scored.length)return null;
+  const first=scored[0], second=scored[1];
+  // Match automatique uniquement s'il est suffisamment fort et non ambigu.
+  if(first.score>=0.80&&(!second||first.score-second.score>=0.08))return first.item;
+  return null;
+ };
+}
+
 globalArticleImportInput.addEventListener("change",e=>{
  const file=e.target.files[0];
  if(!file)return;
@@ -1119,15 +1189,7 @@ globalArticleImportInput.addEventListener("change",e=>{
 
    if(!DATA.length)await loadSuppliersFromD1();
 
-   const supplierMap=new Map();
-   for(const x of DATA){
-    const id=Number(x._d1_id);
-    if(!Number.isInteger(id)||id<=0)continue;
-    for(const label of [x.fournisseur_source,x.nom_actuel]){
-     const key=supplierIdentity(label);
-     if(key&&!supplierMap.has(key))supplierMap.set(key,{id,name:x.fournisseur_source||label});
-    }
-   }
+   const matchSupplier=buildSmartSupplierMatcher(DATA);
 
    const groups=new Map(),unknown=new Map();
    let validRows=0;
@@ -1137,7 +1199,7 @@ globalArticleImportInput.addEventListener("change",e=>{
     validRows++;
 
     const supplierName=String(r[cols.nom_fournisseur]??"").trim();
-    const supplier=supplierMap.get(supplierIdentity(supplierName));
+    const supplier=matchSupplier(supplierName);
     if(!supplier){
      unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
      continue;
