@@ -433,6 +433,16 @@ input,select,button{font-family:inherit}
  </form>
 </dialog>
 
+<style>
+#supplierMatchDialog{width:min(1050px,96vw);max-height:90vh;border:1px solid #dde2e6;border-radius:12px;padding:20px;color:#29343d}
+#supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr);gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select{width:100%;padding:7px}.match-count{text-align:right;font-weight:700}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
+</style>
+<dialog id="supplierMatchDialog">
+ <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Les propositions les plus probables sont placées en premier. Laisse « Ignorer » en cas de doute.</small></div>
+ <div id="supplierMatchList" class="match-list"></div>
+ <div class="match-actions"><button type="button" id="supplierMatchCancel">Annuler la mise à jour</button><button type="button" class="match-apply" id="supplierMatchApply">Utiliser ces correspondances</button></div>
+</dialog>
+
 <script>
 const DATA=[];
 const ARTICLES={};
@@ -1154,6 +1164,68 @@ function buildSmartSupplierMatcher(data){
  };
 }
 
+
+function editDistance(a,b){
+ a=supplierCanonical(a); b=supplierCanonical(b);
+ if(!a)return b.length;if(!b)return a.length;
+ const prev=Array.from({length:b.length+1},(_,i)=>i),cur=new Array(b.length+1);
+ for(let i=1;i<=a.length;i++){cur[0]=i;for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));for(let j=0;j<=b.length;j++)prev[j]=cur[j];}
+ return prev[b.length];
+}
+function supplierSuggestionScore(source,label){
+ const a=supplierDistinctiveWords(source),b=supplierDistinctiveWords(label);
+ const sa=new Set(a),sb=new Set(b),common=a.filter(w=>sb.has(w));
+ const union=new Set([...a,...b]).size||1;
+ let score=common.length/union;
+ const ca=supplierCanonical(source),cb=supplierCanonical(label);
+ if(ca&&cb){
+  if(ca.includes(cb)||cb.includes(ca))score=Math.max(score,.86);
+  const d=editDistance(source,label),mx=Math.max(ca.length,cb.length)||1;
+  score=Math.max(score,1-d/mx);
+ }
+ return score;
+}
+function getSupplierSuggestions(source,limit=5){
+ const out=[];
+ for(const x of DATA){
+  const id=Number(x._d1_id); if(!Number.isInteger(id)||id<=0)continue;
+  const labels=[x.fournisseur_source,x.nom_actuel].filter(Boolean);
+  let best=0;for(const label of labels)best=Math.max(best,supplierSuggestionScore(source,label));
+  out.push({id,name:x.fournisseur_source||x.nom_actuel||("Fournisseur "+id),score:best});
+ }
+ out.sort((a,b)=>b.score-a.score);
+ return out.slice(0,limit);
+}
+function chooseUnknownSupplierMappings(unknown){
+ return new Promise(resolve=>{
+  const dlg=document.getElementById("supplierMatchDialog"),list=document.getElementById("supplierMatchList"),info=document.getElementById("supplierMatchInfo");
+  const entries=[...unknown.entries()].sort((a,b)=>b[1]-a[1]);
+  info.textContent=entries.reduce((s,x)=>s+x[1],0)+" article(s) / "+entries.length+" nom(s) à contrôler.";
+  list.innerHTML="";
+  entries.forEach(([name,count],idx)=>{
+   const row=document.createElement("div");row.className="match-row";
+   const lab=document.createElement("div");lab.textContent=name||"(sans fournisseur)";
+   const cnt=document.createElement("div");cnt.className="match-count";cnt.textContent=count+" art.";
+   const sel=document.createElement("select");sel.dataset.source=name;
+   sel.append(new Option("— Ignorer —",""));
+   if(name){
+    const suggestions=getSupplierSuggestions(name,6);
+    suggestions.forEach((x,i)=>sel.append(new Option((i===0?"★ ":"")+x.name+"  ("+Math.round(x.score*100)+"%)",String(x.id))));
+    // Préselection seulement si la proposition est très forte. Sinon validation humaine obligatoire.
+    if(suggestions[0]&&suggestions[0].score>=.72)sel.value=String(suggestions[0].id);
+   }
+   row.append(lab,cnt,sel);list.append(row);
+  });
+  const cleanup=()=>{document.getElementById("supplierMatchApply").onclick=null;document.getElementById("supplierMatchCancel").onclick=null;};
+  document.getElementById("supplierMatchCancel").onclick=()=>{cleanup();dlg.close();resolve(null)};
+  document.getElementById("supplierMatchApply").onclick=()=>{
+   const map=new Map();list.querySelectorAll("select").forEach(sel=>{if(sel.value)map.set(sel.dataset.source,Number(sel.value));});
+   cleanup();dlg.close();resolve(map);
+  };
+  dlg.showModal();
+ });
+}
+
 globalArticleImportInput.addEventListener("change",e=>{
  const file=e.target.files[0];
  if(!file)return;
@@ -1191,7 +1263,7 @@ globalArticleImportInput.addEventListener("change",e=>{
 
    const matchSupplier=buildSmartSupplierMatcher(DATA);
 
-   const groups=new Map(),unknown=new Map();
+   const groups=new Map(),unknown=new Map(),pendingUnknown=[];
    let validRows=0;
    for(const r of a.slice(1)){
     const numero=String(r[cols.numero_article]??"").trim();
@@ -1199,31 +1271,38 @@ globalArticleImportInput.addEventListener("change",e=>{
     validRows++;
 
     const supplierName=String(r[cols.nom_fournisseur]??"").trim();
-    const supplier=matchSupplier(supplierName);
-    if(!supplier){
-     unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
-     continue;
-    }
-
     const o={numero_article:numero};
     for(const key of ["num_fournisseur","nom_fournisseur","denomination","unite","emballage","groupe_principal","sous_groupe","ean"]){
      const i=cols[key];
      if(i>=0)o[key]=String(r[i]??"").trim();
     }
+    const supplier=matchSupplier(supplierName);
+    if(!supplier){
+     unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
+     pendingUnknown.push({supplierName,article:o});
+     continue;
+    }
     if(!groups.has(supplier.id))groups.set(supplier.id,{name:supplier.name,articles:[]});
     groups.get(supplier.id).articles.push(o);
+   }
+
+   if(unknown.size){
+    const manualMap=await chooseUnknownSupplierMappings(unknown);
+    if(manualMap===null)return;
+    for(const item of pendingUnknown){
+     const id=manualMap.get(item.supplierName);if(!id)continue;
+     const d=DATA.find(x=>Number(x._d1_id)===id);
+     const name=d?(d.fournisseur_source||d.nom_actuel||("Fournisseur "+id)):("Fournisseur "+id);
+     if(!groups.has(id))groups.set(id,{name,articles:[]});
+     groups.get(id).articles.push(item.article);
+    }
    }
 
    if(!groups.size)throw new Error("Aucun fournisseur du fichier ne correspond aux fournisseurs présents dans Cloudflare D1.");
 
    const matched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
-   let warning="";
-   if(unknown.size){
-    const top=[...unknown.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12)
-      .map(([name,count])=>"• "+(name||"(sans fournisseur)")+" : "+count).join("\n");
-    warning="\n\nATTENTION : "+(validRows-matched)+" article(s) appartiennent à "+unknown.size+
-      " fournisseur(s) non reconnus et ne seront pas importés.\n\nExemples :\n"+top;
-   }
+   const ignored=validRows-matched;
+   let warning=ignored?"\n\n"+ignored+" article(s) restent volontairement ignoré(s) car aucune correspondance n'a été validée.":"";
 
    if(!confirm(
     "Mise à jour globale des articles\n\n"+
@@ -1285,8 +1364,8 @@ globalArticleImportInput.addEventListener("change",e=>{
     inchanges+" article(s) inchangé(s)\n"+
     ignores+" ligne(s) ignorée(s)";
 
-   if(unknown.size){
-    finalMessage+="\n\n"+(validRows-matched)+" article(s) non importé(s), car leur fournisseur n'existe pas encore dans la base fournisseurs Cloudflare.";
+   if(ignored){
+    finalMessage+="\n\n"+ignored+" article(s) volontairement non importé(s), faute de correspondance fournisseur validée.";
    }
    alert(finalMessage);
 
