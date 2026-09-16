@@ -257,6 +257,22 @@ input,select,button{font-family:inherit}
 @media(max-width:1000px){.controls{grid-template-columns:1fr 1fr!important}.toolbar-actions{grid-column:1/-1}.toolbar-actions .btn-add{margin-left:0}}
 @media(max-width:700px){.controls{grid-template-columns:1fr!important}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr}.toolbar-actions button{width:100%}.toolbar-actions .btn-add{margin-left:0}}
 
+/* Résultats articles directement sur la page principale */
+.product-results{display:grid;gap:7px;margin-top:9px}
+.product-result{
+ background:#fff;border:1px solid var(--line);border-left:3px solid var(--brand);
+ border-radius:9px;padding:10px 12px;cursor:pointer;transition:.15s;
+ box-shadow:0 1px 4px rgba(0,0,0,.025)
+}
+.product-result:hover{border-color:#cfd5da;border-left-color:var(--brand);box-shadow:0 4px 12px rgba(0,0,0,.06);transform:translateY(-1px)}
+.product-result-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.product-result-title{font-size:14px;font-weight:900;color:var(--ink)}
+.product-result-supplier{font-size:10px;font-weight:800;color:#fff;background:#59636d;border-radius:999px;padding:4px 8px}
+.product-result-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:10px;color:#59636d}
+.product-result-meta span{background:#f3f5f6;border-radius:6px;padding:4px 7px}
+.product-result-meta b{color:#29343d}
+.product-result-open{margin-left:auto;color:#f47b00!important;background:#fff7ef!important;font-weight:900}
+
 @media(max-width:700px){
  .product-search-wrap #pq{padding-right:38px}
  .barcode-scan-btn{display:flex}
@@ -573,8 +589,60 @@ function statusLabel(x){
  if(x.statut_source==="Inactif confirmé / signalé") return "Inactif";
  return x.statut_source||"Statut non renseigné";
 }
+function serverArticleExactValues(a){
+ return [a?.numero_article,a?.num_fournisseur,a?.ean].map(v=>String(v||"").trim());
+}
+function serverArticleExactMatches(raw){
+ const q=String(raw||"").trim().toLowerCase();
+ if(!q)return [];
+ return SERVER_PRODUCT_RESULTS.filter(a=>serverArticleExactValues(a).some(v=>v.toLowerCase()===q));
+}
+function articleResultAllowed(a,fqv,sqv,iv,empty){
+ const ix=DATA.findIndex(x=>Number(x._d1_id)===Number(a.fournisseur_id));
+ if(ix<0)return false;
+ const x=DATA[ix];
+ return (!fqv||n(x.fournisseur_source+" "+x.nom_actuel).includes(fqv)) &&
+        (!sqv||x.statut_source===sqv) &&
+        (!iv||(x.statut_source==="Inactif confirmé / signalé"&&x.type_inactif===iv)) &&
+        (!empty||!x.categories||x.categories.length===0);
+}
+function renderServerArticleResults(fqv,sqv,iv,empty){
+ const raw=String(pq.value||"").trim();
+ const exact=serverArticleExactMatches(raw);
+ const source=exact.length?exact:SERVER_PRODUCT_RESULTS;
+ const rows=source.filter(a=>articleResultAllowed(a,fqv,sqv,iv,empty));
+ stats.textContent=rows.length+" article(s) trouvé(s)"+(SERVER_PRODUCT_SEARCHING?" — recherche Cloudflare en cours…":"");
+ if(SERVER_PRODUCT_SEARCH_ERROR)stats.textContent+=" — recherche articles impossible. Réessaie.";
+ cards.innerHTML=rows.length?rows.map((a,i)=>`<div class="product-result" role="button" tabindex="0" onclick="openServerArticleByData(${Number(a.fournisseur_id)},${JSON.stringify(String(a.numero_article||"")).replace(/</g,"\\u003c")},${JSON.stringify(String(a.num_fournisseur||"")).replace(/</g,"\\u003c")},${JSON.stringify(String(a.ean||"")).replace(/</g,"\\u003c")})" onkeydown="if(event.key==='Enter')this.click()">
+   <div class="product-result-top">
+    <div class="product-result-title">${esc(a.numero_article||"Sans n° article")} — ${esc(a.denomination||"Sans dénomination")}</div>
+    <div class="product-result-supplier">${esc(a.fournisseur||a.nom_fournisseur||"")}</div>
+   </div>
+   <div class="product-result-meta">
+    ${a.num_fournisseur?`<span><b>Réf. fournisseur :</b> ${esc(a.num_fournisseur)}</span>`:""}
+    ${a.ean?`<span><b>EAN :</b> ${esc(a.ean)}</span>`:""}
+    ${a.groupe_principal?`<span>${esc(a.groupe_principal)}</span>`:""}
+    ${a.sous_groupe?`<span>${esc(a.sous_groupe)}</span>`:""}
+    <span class="product-result-open">Ouvrir l’article →</span>
+   </div>
+  </div>`).join(""):`<div class="file-empty">${SERVER_PRODUCT_SEARCHING?"Recherche des articles…":"Aucun article trouvé."}</div>`;
+ syncFilterHighlights();
+}
+async function openServerArticleByData(fournisseurId,numeroArticle,numFournisseur,ean){
+ const ix=DATA.findIndex(x=>Number(x._d1_id)===Number(fournisseurId));
+ if(ix<0)return;
+ await openArticles(ix);
+ const exactKey=String(numeroArticle||numFournisseur||ean||"").trim();
+ articleSearch.value=exactKey;
+ renderArticles();
+}
+
 function render(){
  const fqv=n(fq.value),pqv=n(pq.value),sqv=sq.value,iv=inactiveFilter.value,empty=emptyOnly.checked;
+ if(pqv && (SERVER_PRODUCT_RESULTS.length || SERVER_PRODUCT_SEARCHING || SERVER_PRODUCT_SEARCH_ERROR)){
+  renderServerArticleResults(fqv,sqv,iv,empty);
+  return;
+ }
  let r=DATA.filter(x=>
    (!fqv||n(x.fournisseur_source+" "+x.nom_actuel).includes(fqv)) &&
    (!pqv||productMatch(pq.value,DATA.indexOf(x))) &&
@@ -1873,7 +1941,7 @@ fileDropZone.addEventListener("drop",e=>uploadSupplierFiles(e.dataTransfer.files
 let currentArticleSupplier=-1,currentArticleRows=[],articleSortCol=-1,articleSortAsc=true;const ARTICLE_COLS=[0,1,2,4,5,6,7,8,9];
 
 function closeArticles(){articleModal.classList.remove("open");articleModal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
-function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactEan=currentArticleRows.filter(r=>n(r[9]||"")===q);rows=exactEan.length?exactEan:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
+function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactRows=currentArticleRows.filter(r=>[0,1,9].some(c=>n(r[c]||"")===q));rows=exactRows.length?exactRows:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
 articleSearch.addEventListener("input",()=>{const clean=articleSearch.value.replace(/#/g,"");if(clean!==articleSearch.value)articleSearch.value=clean;renderArticles()});document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 let API_CONNECTED=false;
@@ -2000,15 +2068,16 @@ async function runServerProductSearch(){
   SERVER_PRODUCT_RESULTS=Array.isArray(j.articles)?j.articles:[];
   SERVER_PRODUCT_SUPPLIER_IDS=new Set(SERVER_PRODUCT_RESULTS.map(a=>Number(a.fournisseur_id)).filter(Number.isFinite));
   SERVER_PRODUCT_SEARCH_ERROR=false;
-  const exact=SERVER_PRODUCT_RESULTS.find(a=>String(a.ean||"").trim()===raw);
-  if(exact && /^\d{8,14}$/.test(raw) && lastMainExactEan!==raw){
+  const exactMatches=serverArticleExactMatches(raw);
+  if(exactMatches.length===1 && lastMainExactEan!==raw){
+   const exact=exactMatches[0];
    const ix=DATA.findIndex(x=>Number(x._d1_id)===Number(exact.fournisseur_id));
    if(ix>=0){
     lastMainExactEan=raw;
     await openArticles(ix);
     articleSearch.value=raw;renderArticles();
    }
-  }else if(!exact){lastMainExactEan="";}
+  }else if(exactMatches.length!==1){lastMainExactEan="";}
  }catch(err){
   if(seq===SERVER_PRODUCT_SEARCH_SEQ){console.error("Recherche articles Cloudflare:",err);SERVER_PRODUCT_SEARCH_ERROR=true;SERVER_PRODUCT_RESULTS=[];SERVER_PRODUCT_SUPPLIER_IDS=new Set();}
  }finally{
