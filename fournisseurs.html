@@ -530,26 +530,20 @@ let PRODUCT_SEARCH_UNITS=DATA.map((x,ix)=>{
  return units;
 });
 
+let SERVER_PRODUCT_SUPPLIER_IDS=new Set();
+let SERVER_PRODUCT_RESULTS=[];
+let SERVER_PRODUCT_SEARCHING=false;
+let SERVER_PRODUCT_SEARCH_ERROR=false;
+let SERVER_PRODUCT_SEARCH_SEQ=0;
+let SERVER_PRODUCT_TIMER=null;
+
 function productMatch(query,ix){
  const raw=String(query||"").trim();
  if(!raw)return true;
-
- // Référence, EAN ou numéro article : recherche directe/partielle.
- if(/\d/.test(raw)){
-   const nq=n(raw);
-   return PRODUCT_SEARCH_UNITS[ix].some(u=>n(u).includes(nq));
- }
-
- const qs=searchWords(raw);
-
- // Un mot : recherche tolérante normale dans catégories et articles.
- if(qs.length===1){
-   return PRODUCT_SEARCH_UNITS[ix].some(u=>smartMatch(raw,u));
- }
-
- // Plusieurs mots : ils doivent correspondre dans la MEME catégorie
- // ou le MEME article. C'est le point important pour éviter les faux positifs.
- return PRODUCT_SEARCH_UNITS[ix].some(u=>smartMatch(raw,u));
+ const x=DATA[ix];
+ if(x && SERVER_PRODUCT_SUPPLIER_IDS.has(Number(x._d1_id)))return true;
+ // Les catégories restent recherchées localement, sans charger tous les articles.
+ return (x?.categories||[]).some(c=>smartMatch(raw,c));
 }
 
 
@@ -589,8 +583,8 @@ function render(){
    (!empty||!x.categories||x.categories.length===0)
  );
  stats.textContent=r.length+" fournisseur(s) affiché(s) sur "+DATA.length;
- if(pq.value.trim()&&productLoadPromise)stats.textContent+=" — recherche dans les articles en cours, résultats provisoires…";
- else if(pq.value.trim()&&productSearchError)stats.textContent+=" — recherche incomplète : certains articles n’ont pas pu être chargés. Saisissez à nouveau pour réessayer.";
+ if(pq.value.trim()&&SERVER_PRODUCT_SEARCHING)stats.textContent+=" — recherche Cloudflare en cours…";
+ else if(pq.value.trim()&&SERVER_PRODUCT_SEARCH_ERROR)stats.textContent+=" — recherche articles impossible. Réessaie.";
  cards.innerHTML=r.map(x=>{const ix=DATA.indexOf(x),ac=Number.isFinite(x._d1_nb_articles)?x._d1_nb_articles:(ARTICLES[String(ix)]||[]).length;return `<div class="card">
  <div class="name">${esc(x.fournisseur_source)}</div>
  ${x.nom_actuel!==x.fournisseur_source?`<div class="current"><b>Nom actuel :</b> ${esc(x.nom_actuel)}</div>`:""}
@@ -1904,10 +1898,10 @@ async function loadSuppliersFromD1(){
    dataGeneration++;
    DATA.splice(0,DATA.length,...result.fournisseurs.map(supplierFromD1));
    for(const key of Object.keys(ARTICLES))delete ARTICLES[key];
-   articleRequests=new Map();productLoadPromise=null;productSearchError=false;
+   articleRequests=new Map();productLoadPromise=null;productSearchError=false;SERVER_PRODUCT_SUPPLIER_IDS=new Set();SERVER_PRODUCT_RESULTS=[];SERVER_PRODUCT_SEARCHING=false;SERVER_PRODUCT_SEARCH_ERROR=false;
    API_CONNECTED=true;rebuildProductSearchUnits();updateKpis();render();
    document.getElementById("addSupplier").disabled=false;
-   if(pq.value.trim())ensureProductArticles();
+   if(pq.value.trim())scheduleServerProductSearch(true);
    return true;
   }catch(err){
    API_CONNECTED=false;
@@ -1993,24 +1987,40 @@ supplierForm.addEventListener("submit",async event=>{
 });
 supplierEditor.addEventListener("close",()=>{supplierForm.elements.namedItem("password").value=""});
 let lastMainExactEan="";
-async function openExactEanFromMain(){
- const code=String(pq.value||"").replace(/#/g,"").trim();
- if(!/^\d{8,14}$/.test(code)){lastMainExactEan="";return}
- await ensureProductArticles();
- if(String(pq.value||"").replace(/#/g,"").trim()!==code || lastMainExactEan===code)return;
- for(let ix=0;ix<DATA.length;ix++){
-  const rows=ARTICLES[String(ix)]||[];
-  const hit=rows.find(r=>String(r[9]||"").trim()===code);
-  if(hit){
-   lastMainExactEan=code;
-   await openArticles(ix);
-   articleSearch.value=code;
-   renderArticles();
-   return;
-  }
+async function runServerProductSearch(){
+ const raw=String(pq.value||"").replace(/#/g,"").trim();
+ const seq=++SERVER_PRODUCT_SEARCH_SEQ;
+ if(!raw){
+  SERVER_PRODUCT_SUPPLIER_IDS=new Set();SERVER_PRODUCT_RESULTS=[];SERVER_PRODUCT_SEARCHING=false;SERVER_PRODUCT_SEARCH_ERROR=false;lastMainExactEan="";render();return;
+ }
+ SERVER_PRODUCT_SEARCHING=true;SERVER_PRODUCT_SEARCH_ERROR=false;render();
+ try{
+  const j=await d1Get("/articles/recherche?q="+encodeURIComponent(raw)+"&limit=300");
+  if(seq!==SERVER_PRODUCT_SEARCH_SEQ || String(pq.value||"").replace(/#/g,"").trim()!==raw)return;
+  SERVER_PRODUCT_RESULTS=Array.isArray(j.articles)?j.articles:[];
+  SERVER_PRODUCT_SUPPLIER_IDS=new Set(SERVER_PRODUCT_RESULTS.map(a=>Number(a.fournisseur_id)).filter(Number.isFinite));
+  SERVER_PRODUCT_SEARCH_ERROR=false;
+  const exact=SERVER_PRODUCT_RESULTS.find(a=>String(a.ean||"").trim()===raw);
+  if(exact && /^\d{8,14}$/.test(raw) && lastMainExactEan!==raw){
+   const ix=DATA.findIndex(x=>Number(x._d1_id)===Number(exact.fournisseur_id));
+   if(ix>=0){
+    lastMainExactEan=raw;
+    await openArticles(ix);
+    articleSearch.value=raw;renderArticles();
+   }
+  }else if(!exact){lastMainExactEan="";}
+ }catch(err){
+  if(seq===SERVER_PRODUCT_SEARCH_SEQ){console.error("Recherche articles Cloudflare:",err);SERVER_PRODUCT_SEARCH_ERROR=true;SERVER_PRODUCT_RESULTS=[];SERVER_PRODUCT_SUPPLIER_IDS=new Set();}
+ }finally{
+  if(seq===SERVER_PRODUCT_SEARCH_SEQ){SERVER_PRODUCT_SEARCHING=false;render();}
  }
 }
-pq.addEventListener("input",()=>{if(pq.value.trim()){ensureProductArticles();openExactEanFromMain()}else lastMainExactEan=""});
+function scheduleServerProductSearch(immediate=false){
+ clearTimeout(SERVER_PRODUCT_TIMER);
+ if(!pq.value.trim()){runServerProductSearch();return;}
+ SERVER_PRODUCT_TIMER=setTimeout(runServerProductSearch,immediate?0:220);
+}
+pq.addEventListener("input",()=>scheduleServerProductSearch(false));
 
 loadSuppliersFromD1();
 loadStorageIndicator();
