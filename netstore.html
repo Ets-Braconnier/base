@@ -51,7 +51,10 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 @media(max-width:560px){.nav-btn{padding:0 8px;font-size:9px}.search{width:135px}}
 
 .wrap{max-width:1600px;padding:18px}.portal-header{background:#29343d;color:white;border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}.portal-brand{display:flex;align-items:center;gap:12px}.portal-logo{width:44px;height:44px;border-radius:10px;background:#f47b00;display:grid;place-items:center;font-size:24px;font-weight:bold}.portal-brand h1{font-size:23px;margin:0}.portal-brand p{font-size:12px;margin:5px 0 0;color:#d5dde1}.portal-nav{display:flex;gap:8px;flex-wrap:wrap}.portal-nav a,.portal-nav button{background:#f47b00;color:white;border:0;border-radius:7px;padding:10px 12px;font:700 12px Arial;text-decoration:none;cursor:pointer}.portal-nav a:hover,.portal-nav button:hover{background:#dc6f00}.search-bar{margin-bottom:16px}.search-bar .search{margin:0;width:100%;height:40px;border:1px solid #dde2e6;font-size:13px;background:white}.portal-nav :focus-visible{outline:3px solid white;outline-offset:2px}@media(max-width:750px){.wrap{padding:10px}.portal-header{padding:16px}}
-.card{min-width:0}.actions{grid-template-columns:minmax(0,82px) minmax(0,88px)}.portal-brand{min-width:0}.portal-brand>div:last-child{min-width:0}.portal-logo{flex-shrink:0}@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:370px){.grid{grid-template-columns:1fr}}</style><script>
+.card{min-width:0}.actions{grid-template-columns:minmax(0,82px) minmax(0,88px)}.portal-brand{min-width:0}.portal-brand>div:last-child{min-width:0}.portal-logo{flex-shrink:0}@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:370px){.grid{grid-template-columns:1fr}}
+.add-supplier-btn{background:#fff!important;color:#f47b00!important;border:1px solid #f47b00!important}.add-supplier-btn:hover{background:#fff6ed!important}
+.modal-overlay{position:fixed;inset:0;background:rgba(20,27,33,.58);z-index:20000;display:none;align-items:center;justify-content:center;padding:18px}.modal-overlay.open{display:flex}.supplier-modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:20px}.supplier-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.supplier-modal-head h2{font-size:18px;margin:0}.modal-x{border:0;background:#eef1f3;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:18px}.supplier-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.supplier-form label{font-size:11px;font-weight:700;color:#34404a;display:flex;flex-direction:column;gap:5px}.supplier-form .full{grid-column:1/-1}.supplier-form input,.supplier-form select{height:38px;border:1px solid #d9dee3;border-radius:7px;padding:0 10px;font:12px Arial;background:#fff}.supplier-form input:focus,.supplier-form select:focus{outline:2px solid #f47b00;outline-offset:1px}.form-note{grid-column:1/-1;font-size:10px;color:#69757e;margin-top:-3px}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:5px}.form-actions button{height:36px;border-radius:7px;padding:0 15px;font:700 11px Arial;cursor:pointer}.cancel-btn{background:#eef1f3;border:0;color:#27323c}.save-btn{background:#f47b00;border:0;color:#fff}.save-btn:disabled{opacity:.55;cursor:wait}.dynamic-badge{font-size:8px;color:#6b7280;margin-top:2px}@media(max-width:560px){.supplier-form{grid-template-columns:1fr}.supplier-form .full,.form-note,.form-actions{grid-column:1}}
+</style><script>
 (() => {
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
@@ -73,7 +76,7 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 <div class="wrap">
 <header class="portal-header">
  <div class="portal-brand"><div class="portal-logo">B</div><div><h1>NetStore</h1><p>Ets Braconnier · fournisseurs en ligne et accès sécurisés</p></div></div>
- <nav class="portal-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="fournisseurs.html">Base fournisseurs</a><a href="calculs.html">Calculs</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav>
+ <nav class="portal-nav" aria-label="Navigation principale"><button type="button" class="add-supplier-btn" onclick="openSupplierModal()">＋ Ajouter un fournisseur</button><a href="index.html">Accueil</a><a href="fournisseurs.html">Base fournisseurs</a><a href="calculs.html">Calculs</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav>
 </header>
 <div class="search-bar"><input id="q" class="search" type="search" aria-label="Rechercher un fournisseur" placeholder="Rechercher un fournisseur…" oninput="filterAll()"></div>
 <section class="section c0">
@@ -388,7 +391,27 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
     <button onclick="showCredentials(13)">Accès</button>
   </div>
 </article></div>
-</section></div>
+</section>
+<div id="dynamicSuppliers"></div>
+</div>
+
+<div id="supplierModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="supplierModalTitle" onclick="if(event.target===this)closeSupplierModal()">
+ <div class="supplier-modal">
+  <div class="supplier-modal-head"><h2 id="supplierModalTitle">Ajouter un fournisseur</h2><button class="modal-x" type="button" onclick="closeSupplierModal()" aria-label="Fermer">×</button></div>
+  <form id="supplierForm" class="supplier-form" onsubmit="saveSupplier(event)">
+   <label>Nom du fournisseur<input id="supplierName" required maxlength="160" autocomplete="off"></label>
+   <label>Catégorie<select id="supplierCategory" required>
+    <option value="ÉLECTRICITÉ">⚡ ÉLECTRICITÉ</option><option value="SANITAIRE & CHAUFFAGE">● SANITAIRE & CHAUFFAGE</option><option value="OUTILLAGE & FIXATIONS">🔧 OUTILLAGE & FIXATIONS</option><option value="MATÉRIAUX DE CONSTRUCTION">▦ MATÉRIAUX DE CONSTRUCTION</option><option value="MENUISERIE & AMÉNAGEMENT">▤ MENUISERIE & AMÉNAGEMENT</option><option value="AUTRES">• AUTRES</option>
+   </select></label>
+   <label class="full">Adresse du site / NetStore<input id="supplierUrl" type="url" required placeholder="https://..."></label>
+   <label class="full">URL du logo <span style="font-weight:400">(facultatif)</span><input id="supplierLogo" type="url" placeholder="https://..."></label>
+   <label>Identifiant<input id="supplierUsername" autocomplete="off"></label>
+   <label>Mot de passe<input id="supplierPassword" type="password" autocomplete="new-password"></label>
+   <div class="form-note">L’identifiant et le mot de passe sont envoyés uniquement au Worker puis chiffrés avant leur enregistrement dans D1.</div>
+   <div class="form-actions"><button type="button" class="cancel-btn" onclick="closeSupplierModal()">Annuler</button><button id="saveSupplierBtn" type="submit" class="save-btn">Enregistrer</button></div>
+  </form>
+ </div>
+</div>
 <script>
 const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev";
 const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
@@ -430,6 +453,74 @@ function filterAll(){
   s.classList.toggle('hidden',n===0);
  });
 }
+
+
+const CATEGORY_META={
+ "ÉLECTRICITÉ":{cls:"c0",label:"⚡ &nbsp;ÉLECTRICITÉ"},
+ "SANITAIRE & CHAUFFAGE":{cls:"c1",label:"● &nbsp;SANITAIRE & CHAUFFAGE"},
+ "OUTILLAGE & FIXATIONS":{cls:"c2",label:"🔧 &nbsp;OUTILLAGE & FIXATIONS"},
+ "MATÉRIAUX DE CONSTRUCTION":{cls:"c3",label:"▦ &nbsp;MATÉRIAUX DE CONSTRUCTION"},
+ "MENUISERIE & AMÉNAGEMENT":{cls:"c4",label:"▤ &nbsp;MENUISERIE & AMÉNAGEMENT"},
+ "AUTRES":{cls:"c5",label:"• &nbsp;AUTRES"}
+};
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function initials(name){return String(name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();}
+function fallbackLogo(url){try{return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(url).hostname)}&sz=128`;}catch{return "";}}
+function authHeaders(jsonBody=false){const t=sessionStorage.getItem(PORTAL_TOKEN_KEY);const h={"Authorization":"Bearer "+t};if(jsonBody)h["Content-Type"]="application/json";return h;}
+
+function openSupplierModal(){document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);}
+function closeSupplierModal(){document.getElementById("supplierModal").classList.remove("open");}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSupplierModal();});
+
+async function saveSupplier(e){
+ e.preventDefault();
+ const btn=document.getElementById("saveSupplierBtn");btn.disabled=true;btn.textContent="Enregistrement…";
+ const body={name:document.getElementById("supplierName").value.trim(),category:document.getElementById("supplierCategory").value,url:document.getElementById("supplierUrl").value.trim(),logo_url:document.getElementById("supplierLogo").value.trim(),username:document.getElementById("supplierUsername").value,password:document.getElementById("supplierPassword").value,display_order:0,active:1};
+ try{
+  const r=await fetch(AUTH_API+"/suppliers",{method:"POST",headers:authHeaders(true),body:JSON.stringify(body)});
+  const data=await r.json().catch(()=>({}));
+  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(!r.ok)throw new Error(data.error||"Impossible d’enregistrer le fournisseur.");
+  document.getElementById("supplierForm").reset();closeSupplierModal();await loadDynamicSuppliers();alert("Fournisseur ajouté.");
+ }catch(err){alert(err.message||"Erreur lors de l’enregistrement.");}
+ finally{btn.disabled=false;btn.textContent="Enregistrer";}
+}
+
+async function showDynamicCredentials(id){
+ try{
+  const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id)+"/credentials",{headers:authHeaders()});
+  const c=await r.json().catch(()=>({}));
+  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(!r.ok)throw new Error(c.error||"Accès impossible.");
+  alert(`Fournisseur: ${c.n}\nIdentifiant: ${c.i}\nMot de passe: ${c.p}`);
+ }catch(err){alert(err.message||"Impossible de récupérer les accès.");}
+}
+
+async function loadDynamicSuppliers(){
+ const host=document.getElementById("dynamicSuppliers");
+ try{
+  const r=await fetch(AUTH_API+"/suppliers",{headers:authHeaders()});
+  const data=await r.json().catch(()=>({}));
+  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(!r.ok)throw new Error(data.error||"Chargement impossible.");
+  const groups={};for(const x of (data.suppliers||[])){(groups[x.category]??=[]).push(x);}
+  host.innerHTML="";
+  Object.entries(groups).forEach(([cat,items])=>{
+   const meta=CATEGORY_META[cat]||CATEGORY_META.AUTRES;
+   const section=document.createElement("section");section.className="section "+meta.cls;section.dataset.dynamic="1";
+   section.innerHTML=`<div class="category"><strong>${meta.label}</strong></div><div class="grid"></div>`;
+   const grid=section.querySelector(".grid");
+   items.forEach(x=>{
+    const logo=x.logo_url||fallbackLogo(x.url), name=esc(x.name), url=esc(x.url), img=esc(logo), init=esc(initials(x.name));
+    const card=document.createElement("article");card.className="card";card.dataset.name=String(x.name||"").toLowerCase();
+    card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button type="button">Accès</button></div>`;
+    card.querySelector("button").addEventListener("click",()=>showDynamicCredentials(x.id));grid.appendChild(card);
+   });host.appendChild(section);
+  });
+  filterAll();
+ }catch(err){console.error("NetStore D1:",err);}
+}
+loadDynamicSuppliers();
 
 function showNetStore(){
   document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
