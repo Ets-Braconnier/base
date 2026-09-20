@@ -92,4 +92,37 @@ async function setActive(id,active){if(!confirm(active?"Réactiver ce profil ?":
 function logout(){localStorage.removeItem(TOKEN_KEY);token="";me=null;$("authGate").style.display="grid";$("authPass").value=""}
 $("loginTab").onclick=()=>setAuthMode("login");$("signupTab").onclick=()=>setAuthMode("signup");$("authSubmit").onclick=authenticate;$("authPass").onkeydown=e=>{if(e.key==="Enter")authenticate()};$("newMainBtn").onclick=openNew;$("closeModal").onclick=closeModal;$("cancelBtn").onclick=closeModal;$("saveBtn").onclick=save;$("archiveBtn").onclick=archive;$("deleteBtn").onclick=removeNote;$("addCheck").onclick=()=>addCheckLine();$("fVisibility").onchange=()=>$("shareField").style.display=$("fVisibility").value==="shared"?"":"none";$("fCategory").onchange=()=>{const other=$("fCategory").value==="Autre";$("fCategoryOther").style.display=other?"":"none";if(other)$("fCategoryOther").focus()};$("search").oninput=render;$("sort").onchange=render;document.querySelectorAll(".filter").forEach(b=>b.onclick=async()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");filter=b.dataset.filter;await loadNotes()});$("profileBtn").onclick=e=>{e.stopPropagation();$("userPopover").classList.toggle("open")};$("userPopover").onclick=e=>e.stopPropagation();document.addEventListener("click",()=>$("userPopover").classList.remove("open"));$("notesLogoutBtn").onclick=()=>{if(confirm("Se déconnecter de Notes ?"))logout()};$("adminBtn").onclick=()=>{$("userPopover").classList.remove("open");openAdmin()};$("adminClose").onclick=()=>$("adminPanel").classList.remove("show");
 (async()=>{if(token){try{$("authGate").style.display="none";await initApp()}catch{logout()}}})();
-</script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>
+</script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script>
+<script id="checklist-preserve-fix">
+(function(){
+  function snapshotChecklist(){
+    const box=document.getElementById("checkEditor");
+    if(!box)return [];
+    return [...box.querySelectorAll(".check-line")].map(x=>({
+      done:!!x.querySelector('input[type="checkbox"]')?.checked,
+      label:x.querySelector('input[type="text"]')?.value||""
+    }));
+  }
+  function restoreChecklist(items){
+    const box=document.getElementById("checkEditor");
+    if(!box || box.querySelector(".check-line")) return;
+    (items||[]).forEach(x=>addCheckLine(x.label,x.done));
+  }
+  const cat=document.getElementById("fCategory");
+  if(cat){
+    cat.addEventListener("focus",()=>{cat._checkDraft=snapshotChecklist()});
+    cat.addEventListener("change",()=>{
+      const draft=cat._checkDraft||snapshotChecklist();
+      const other=cat.value==="Autre";
+      const custom=document.getElementById("fCategoryOther");
+      if(custom){
+        custom.style.display=other?"":"none";
+        if(other) setTimeout(()=>custom.focus(),0);
+      }
+      requestAnimationFrame(()=>restoreChecklist(draft));
+    },true);
+  }
+})();
+</script>
+
+</body></html>
