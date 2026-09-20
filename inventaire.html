@@ -1,8 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>Inventaire Braconnier</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
@@ -69,175 +70,160 @@
 .history-table{width:100%;border-collapse:collapse;min-width:760px}.history-table th,.history-table td{padding:8px;border-bottom:1px solid #edf0f2;text-align:left;font-size:10px}.history-table th{background:#eef2f3}.history-qty{width:86px;height:34px;border:1px solid #cfd6dc;border-radius:7px;padding:0 7px;font-weight:800;text-align:center}.history-save{height:34px;border:0;border-radius:7px;padding:0 10px;background:var(--blue);color:#fff;font-size:9px;font-weight:800;cursor:pointer}.history-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.history-title h2{margin:0;font-size:15px}.history-title small{font-size:10px;color:var(--muted)}
 
 </style>
-
 <style id="unified-portal-header-style">
-.unified-header{background:#29343d!important;color:#fff!important;border-radius:13px!important;padding:15px 17px!important;min-height:72px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important;position:relative!important;top:auto!important;box-shadow:none!important}
-.unified-brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:210px}.unified-logo{width:42px!important;height:42px!important;min-width:42px!important;border-radius:9px!important;background:#f47b00!important;color:#fff!important;display:grid!important;place-items:center!important;font-weight:900!important;font-size:20px!important}.unified-brand h1{font-family:Arial,Helvetica,sans-serif!important;font-size:20px!important;line-height:1.1!important;margin:0!important;color:#fff!important}.unified-brand p{font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1.35!important;color:#d4dce1!important;margin:4px 0 0!important}
-.unified-nav{display:flex!important;gap:6px!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-end!important}.unified-nav a,.unified-nav button{border:0!important;border-radius:7px!important;padding:9px 11px!important;min-height:33px!important;background:#f47b00!important;color:#fff!important;text-decoration:none!important;font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1!important;font-weight:800!important;cursor:pointer!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}.unified-nav a:hover,.unified-nav button:hover{background:#dc6f00!important}
-@media(max-width:760px){.unified-header{border-radius:9px!important;padding:11px!important}.unified-brand{width:100%}.unified-nav{width:100%!important;justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:2px!important;scrollbar-width:thin}.unified-nav a,.unified-nav button{white-space:nowrap!important;flex:0 0 auto!important}}
+.unified-header{background:#29343d!important;color:#fff!important;border-radius:13px!important;padding:14px 16px!important;min-height:70px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;position:relative!important;top:auto!important;box-shadow:0 3px 12px rgba(20,27,32,.08)!important;z-index:1000!important}
+.unified-brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;flex:1 1 auto!important}.unified-logo{width:42px!important;height:42px!important;min-width:42px!important;border-radius:9px!important;background:#f47b00!important;color:#fff!important;display:grid!important;place-items:center!important;font-weight:900!important;font-size:20px!important}.unified-brand h1{font-family:Arial,Helvetica,sans-serif!important;font-size:19px!important;line-height:1.1!important;margin:0!important;color:#fff!important}.unified-brand p{font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1.35!important;color:#d4dce1!important;margin:4px 0 0!important}
+.unified-tools{display:flex!important;align-items:center!important;gap:7px!important;flex:0 0 auto!important}.unified-menu-wrap{position:relative!important}.unified-menu-btn,.unified-logout{height:36px!important;border:0!important;border-radius:8px!important;padding:0 13px!important;color:#fff!important;font:800 10px Arial,Helvetica,sans-serif!important;cursor:pointer!important;display:inline-flex!important;align-items:center!important;gap:7px!important}.unified-menu-btn{background:#f47b00!important}.unified-menu-btn:hover{background:#dc6f00!important}.unified-logout{background:#46515a!important}.unified-logout:hover{background:#56636d!important}.unified-menu-icon{font-size:15px!important;line-height:1!important}
+.unified-menu{display:none!important;position:absolute!important;right:0!important;top:44px!important;width:255px!important;background:#fff!important;border:1px solid #dfe4e8!important;border-radius:12px!important;padding:7px!important;box-shadow:0 18px 45px rgba(20,27,32,.2)!important;z-index:99999!important}.unified-menu.open{display:block!important}.unified-menu a{display:flex!important;align-items:center!important;justify-content:space-between!important;width:100%!important;padding:10px 11px!important;border-radius:8px!important;color:#29343d!important;text-decoration:none!important;font:700 11px Arial,Helvetica,sans-serif!important;background:transparent!important}.unified-menu a:hover{background:#f4f6f7!important}.unified-menu a.active{background:#fff1e4!important;color:#c86200!important}.unified-menu a.active:after{content:'•';font-size:17px;color:#f47b00}.unified-page-actions{display:flex!important;gap:6px!important;align-items:center!important;margin-left:auto!important}.unified-page-actions button{height:36px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:8px!important;color:#fff!important;font:800 10px Arial,Helvetica,sans-serif!important;padding:0 11px!important;cursor:pointer!important;background:#3d4851!important}.unified-page-actions button:hover{background:#4a5660!important}
+@media(max-width:760px){.unified-header{border-radius:9px!important;padding:11px 12px!important;gap:9px!important;flex-wrap:wrap!important}.unified-brand{min-width:calc(100% - 120px)!important}.unified-brand h1{font-size:17px!important}.unified-brand p{display:none!important}.unified-tools{margin-left:auto!important}.unified-page-actions{order:3!important;width:100%!important;margin-left:0!important;overflow-x:auto!important}.unified-page-actions button{white-space:nowrap!important}.unified-logout{width:36px!important;padding:0!important;justify-content:center!important;font-size:0!important}.unified-logout:before{content:'↪';font-size:17px!important}.unified-menu{position:fixed!important;left:10px!important;right:10px!important;top:78px!important;width:auto!important;max-height:calc(100vh - 95px)!important;overflow:auto!important}}
 </style>
-<style>.unified-page-actions{display:flex;gap:6px;flex-wrap:wrap}.unified-page-actions button{height:33px;border:0;border-radius:7px;color:#fff;font-size:10px;font-weight:800;padding:0 11px;cursor:pointer;background:#48535d}.unified-page-actions .orange{background:#f47b00}@media(max-width:760px){.unified-page-actions{width:100%}}</style></head>
+</head>
 <body>
 <div id="loginGate">
-  <div class="login-card">
-    <div class="login-brand">B</div>
-    <h1>Inventaire Braconnier</h1>
-    <p>Entrez simplement votre nom ou identifiant. Aucun mot de passe. Le même identifiant reprend automatiquement l’inventaire déjà commencé.</p>
-    <input id="loginInput" autocomplete="name" placeholder="">
-    <button id="loginBtn">Commencer / reprendre</button>
-    <div id="loginError" class="login-error"></div>
-  </div>
+<div class="login-card">
+<div class="login-brand">B</div>
+<h1>Inventaire Braconnier</h1>
+<p>Entrez simplement votre nom ou identifiant. Aucun mot de passe. Le même identifiant reprend automatiquement l’inventaire déjà commencé.</p>
+<input autocomplete="name" id="loginInput" placeholder=""/>
+<button id="loginBtn">Commencer / reprendre</button>
+<div class="login-error" id="loginError"></div>
 </div>
-
+</div>
 <div class="wrap">
-  <header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Inventaire</h1><p>Ets Braconnier · scan, recherche et comptage magasin</p></div></div><div class="unified-page-actions"><button id="adminBtn" class="admin-open">Gestion des inventaires</button><button class="orange" id="changeUserBtn">Changer d’utilisateur</button></div><nav class="unified-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav></header>
-
-  <div class="statusbar">
-    <div class="kpi"><b id="userKpi">—</b><span>Utilisateur</span></div>
-    <div class="kpi"><b id="countKpi">0</b><span>Articles comptés</span></div>
-    <div class="kpi"><b id="unitsKpi">0</b><span>Unités saisies</span></div>
-    <div class="kpi"><b id="catalogKpi">0</b><span>Articles dans la bibliothèque</span></div>
-  </div>
-
-  <div class="panel">
-    <div class="search-row">
-      <input id="searchInput" class="search" type="search" autocomplete="off" inputmode="search" placeholder="Scanner un EAN ou rechercher article / réf. fournisseur / désignation…">
-      <button id="scanBtn" class="scan-btn" type="button" aria-label="Scanner un code-barres">▣</button>
-    </div>
-    <div class="hint">Scanner USB/Bluetooth sur PC : cliquez dans le champ puis scannez. Le préfixe parasite <b>in #</b> ou <b>#</b> est automatiquement ignoré. Sur téléphone, utilisez le bouton scanner.</div>
-    <div id="lookupState" class="lookup-state">Chargement de la bibliothèque d’articles…</div>
-    <div id="results" class="results"></div>
-
-    <div id="selected" class="selected">
-      <h2 id="selTitle">Article</h2>
-      <div class="article-grid">
-        <div class="field"><b>Code EAN</b><span id="selEan"></span></div>
-        <div class="field"><b>N° article</b><span id="selArticle"></span></div>
-        <div class="field"><b>N° article fournisseur</b><span id="selSupplierRef"></span></div>
-        <div class="field"><b>Dénomination</b><span id="selDenom"></span></div>
-      </div>
-      <div class="qty-row">
-        <div class="qty-box"><label>Quantité en magasin</label><input id="qtyInput" class="qty" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
-        <button id="okBtn" class="ok-btn">OK ✓</button>
-        <div id="previous" class="previous"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel" id="historyPanel">
-    <div class="history-title">
-      <h2>20 dernières saisies</h2>
-      <small>Vous pouvez corriger directement une quantité.</small>
-    </div>
-    <div class="table-wrap">
-      <table class="history-table">
-        <thead><tr><th>Heure</th><th>Article</th><th>Dénomination</th><th>Quantité</th><th>Action</th></tr></thead>
-        <tbody id="historyBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="inventory-head">
-      <h2>Inventaire de <span id="inventoryUser">—</span></h2>
-      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-        <span id="syncBadge" class="sync wait">Chargement…</span>
-        <div class="inventory-actions">
-          <button class="retry" id="syncBtn">Synchroniser</button>
-          <button class="excel" id="exportBtn">Exporter Excel</button>
-        </div>
-      </div>
-    </div>
-    <div class="table-wrap"><table class="table"><thead><tr><th>EAN</th><th>N° article</th><th>N° article fournisseur</th><th>Dénomination</th><th>Fournisseur</th><th>Quantité</th><th>Dernière saisie</th></tr></thead><tbody id="inventoryBody"></tbody></table></div>
-  </div>
+<header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Inventaire</h1><p>Ets Braconnier · scan, recherche et comptage magasin</p></div></div><div class="unified-page-actions"><button class="admin-open" id="adminBtn">Gestion des inventaires</button><button class="orange" id="changeUserBtn">Changer d’utilisateur</button></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a href="fournisseurs.html">Base fournisseurs</a><a class="active" href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
+<div class="statusbar">
+<div class="kpi"><b id="userKpi">—</b><span>Utilisateur</span></div>
+<div class="kpi"><b id="countKpi">0</b><span>Articles comptés</span></div>
+<div class="kpi"><b id="unitsKpi">0</b><span>Unités saisies</span></div>
+<div class="kpi"><b id="catalogKpi">0</b><span>Articles dans la bibliothèque</span></div>
 </div>
-
-
+<div class="panel">
+<div class="search-row">
+<input autocomplete="off" class="search" id="searchInput" inputmode="search" placeholder="Scanner un EAN ou rechercher article / réf. fournisseur / désignation…" type="search"/>
+<button aria-label="Scanner un code-barres" class="scan-btn" id="scanBtn" type="button">▣</button>
+</div>
+<div class="hint">Scanner USB/Bluetooth sur PC : cliquez dans le champ puis scannez. Le préfixe parasite <b>in #</b> ou <b>#</b> est automatiquement ignoré. Sur téléphone, utilisez le bouton scanner.</div>
+<div class="lookup-state" id="lookupState">Chargement de la bibliothèque d’articles…</div>
+<div class="results" id="results"></div>
+<div class="selected" id="selected">
+<h2 id="selTitle">Article</h2>
+<div class="article-grid">
+<div class="field"><b>Code EAN</b><span id="selEan"></span></div>
+<div class="field"><b>N° article</b><span id="selArticle"></span></div>
+<div class="field"><b>N° article fournisseur</b><span id="selSupplierRef"></span></div>
+<div class="field"><b>Dénomination</b><span id="selDenom"></span></div>
+</div>
+<div class="qty-row">
+<div class="qty-box"><label>Quantité en magasin</label><input class="qty" id="qtyInput" inputmode="numeric" min="0" placeholder="0" step="1" type="number"/></div>
+<button class="ok-btn" id="okBtn">OK ✓</button>
+<div class="previous" id="previous"></div>
+</div>
+</div>
+</div>
+<div class="panel" id="historyPanel">
+<div class="history-title">
+<h2>20 dernières saisies</h2>
+<small>Vous pouvez corriger directement une quantité.</small>
+</div>
+<div class="table-wrap">
+<table class="history-table">
+<thead><tr><th>Heure</th><th>Article</th><th>Dénomination</th><th>Quantité</th><th>Action</th></tr></thead>
+<tbody id="historyBody"></tbody>
+</table>
+</div>
+</div>
+<div class="panel">
+<div class="inventory-head">
+<h2>Inventaire de <span id="inventoryUser">—</span></h2>
+<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+<span class="sync wait" id="syncBadge">Chargement…</span>
+<div class="inventory-actions">
+<button class="retry" id="syncBtn">Synchroniser</button>
+<button class="excel" id="exportBtn">Exporter Excel</button>
+</div>
+</div>
+</div>
+<div class="table-wrap"><table class="table"><thead><tr><th>EAN</th><th>N° article</th><th>N° article fournisseur</th><th>Dénomination</th><th>Fournisseur</th><th>Quantité</th><th>Dernière saisie</th></tr></thead><tbody id="inventoryBody"></tbody></table></div>
+</div>
+</div>
 <div id="adminModal">
-  <div class="admin-shell">
-    <div class="admin-top">
-      <div>
-        <h2>Gestion des inventaires</h2>
-        <small>Tous les inventaires enregistrés dans D1, au même endroit.</small>
-      </div>
-      <button id="adminCloseBtn" type="button">Fermer ✕</button>
-    </div>
-
-    <div class="admin-content">
-      <div id="adminLogin" class="admin-login">
-        <h3>Accès administrateur</h3>
-        <p>Entrez le mot de passe administrateur de la Base fournisseurs. Il n’est conservé que pendant cette session du navigateur.</p>
-        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Mot de passe administrateur">
-        <button id="adminLoginBtn" type="button">Ouvrir la gestion</button>
-        <div id="adminError" class="admin-error"></div>
-      </div>
-
-      <div id="adminDashboard" class="admin-dashboard">
-        <div class="admin-kpis">
-          <div class="kpi"><b id="adminUsersKpi">0</b><span>Inventaires / utilisateurs</span></div>
-          <div class="kpi"><b id="adminArticlesKpi">0</b><span>Articles comptés</span></div>
-          <div class="kpi"><b id="adminUnitsKpi">0</b><span>Unités comptées</span></div>
-        </div>
-
-        <div class="admin-tools">
-          <input id="adminSearch" type="search" placeholder="Rechercher un utilisateur…">
-          <button id="adminRefreshBtn" class="refresh" type="button">Actualiser</button>
-          <button id="adminExportAllBtn" class="all-export" type="button">Exporter tous les inventaires</button>
-          <button id="adminLogoutBtn" class="logout-admin" type="button">Verrouiller</button>
-        </div>
-
-        <div class="table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Utilisateur</th>
-                <th>Articles</th>
-                <th>Unités</th>
-                <th>Dernière saisie</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="adminInventoryBody"></tbody>
-          </table>
-        </div>
-
-        <div id="adminDetail" class="admin-detail">
-          <div class="admin-detail-head">
-            <h3 id="adminDetailTitle">Inventaire</h3>
-            <div style="display:flex;gap:6px;flex-wrap:wrap"><button id="adminDetailExportBtn" type="button">Télécharger cet Excel</button><button id="adminDeleteUserBtn" class="delete-user" type="button">Supprimer cet inventaire</button></div>
-          </div>
-          <div class="table-wrap">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>EAN</th>
-                  <th>N° article</th>
-                  <th>N° article fournisseur</th>
-                  <th>Dénomination</th>
-                  <th>Fournisseur</th>
-                  <th>Quantité</th>
-                  <th>Dernière saisie</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="adminDetailBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="admin-shell">
+<div class="admin-top">
+<div>
+<h2>Gestion des inventaires</h2>
+<small>Tous les inventaires enregistrés dans D1, au même endroit.</small>
 </div>
-
+<button id="adminCloseBtn" type="button">Fermer ✕</button>
+</div>
+<div class="admin-content">
+<div class="admin-login" id="adminLogin">
+<h3>Accès administrateur</h3>
+<p>Entrez le mot de passe administrateur de la Base fournisseurs. Il n’est conservé que pendant cette session du navigateur.</p>
+<input autocomplete="current-password" id="adminPassword" placeholder="Mot de passe administrateur" type="password"/>
+<button id="adminLoginBtn" type="button">Ouvrir la gestion</button>
+<div class="admin-error" id="adminError"></div>
+</div>
+<div class="admin-dashboard" id="adminDashboard">
+<div class="admin-kpis">
+<div class="kpi"><b id="adminUsersKpi">0</b><span>Inventaires / utilisateurs</span></div>
+<div class="kpi"><b id="adminArticlesKpi">0</b><span>Articles comptés</span></div>
+<div class="kpi"><b id="adminUnitsKpi">0</b><span>Unités comptées</span></div>
+</div>
+<div class="admin-tools">
+<input id="adminSearch" placeholder="Rechercher un utilisateur…" type="search"/>
+<button class="refresh" id="adminRefreshBtn" type="button">Actualiser</button>
+<button class="all-export" id="adminExportAllBtn" type="button">Exporter tous les inventaires</button>
+<button class="logout-admin" id="adminLogoutBtn" type="button">Verrouiller</button>
+</div>
+<div class="table-wrap">
+<table class="admin-table">
+<thead>
+<tr>
+<th>Utilisateur</th>
+<th>Articles</th>
+<th>Unités</th>
+<th>Dernière saisie</th>
+<th>Actions</th>
+</tr>
+</thead>
+<tbody id="adminInventoryBody"></tbody>
+</table>
+</div>
+<div class="admin-detail" id="adminDetail">
+<div class="admin-detail-head">
+<h3 id="adminDetailTitle">Inventaire</h3>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><button id="adminDetailExportBtn" type="button">Télécharger cet Excel</button><button class="delete-user" id="adminDeleteUserBtn" type="button">Supprimer cet inventaire</button></div>
+</div>
+<div class="table-wrap">
+<table class="table">
+<thead>
+<tr>
+<th>EAN</th>
+<th>N° article</th>
+<th>N° article fournisseur</th>
+<th>Dénomination</th>
+<th>Fournisseur</th>
+<th>Quantité</th>
+<th>Dernière saisie</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="adminDetailBody"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div id="scannerModal">
-  <div class="scanner-shell">
-    <div class="scanner-top"><b>Scanner le code-barres</b><button id="closeScanner">Fermer ✕</button></div>
-    <div class="video-wrap"><video id="scannerVideo" autoplay playsinline muted></video><div class="scan-frame"></div></div>
-    <div id="scannerMsg" class="scanner-msg">Placez le code-barres dans le cadre.</div>
-  </div>
+<div class="scanner-shell">
+<div class="scanner-top"><b>Scanner le code-barres</b><button id="closeScanner">Fermer ✕</button></div>
+<div class="video-wrap"><video autoplay="" id="scannerVideo" muted="" playsinline=""></video><div class="scan-frame"></div></div>
+<div class="scanner-msg" id="scannerMsg">Placez le code-barres dans le cadre.</div>
 </div>
-<div id="toast" class="toast"></div>
-
+</div>
+<div class="toast" id="toast"></div>
 <script>
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 const AUTH_API_PORTAL="https://braconnier-auth.sebastien-025.workers.dev";
@@ -896,5 +882,5 @@ window.addEventListener("beforeunload",closeScanner);window.addEventListener("on
 
 (async()=>{await portalCheck();const last=localStorage.getItem(USER_KEY)||"";if(last){$("loginInput").value=last;login(last)}else{$("loginInput").focus()}})();
 </script>
-</body>
+<script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body>
 </html>

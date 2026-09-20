@@ -1,4 +1,5 @@
-<!doctype html><html lang="fr"><head>
+<!DOCTYPE html>
+<html lang="fr"><head>
 <script>
 const AUTH_API_PORTAL="https://braconnier-auth.sebastien-025.workers.dev";
 const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
@@ -14,8 +15,7 @@ const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
   }
 })();
 </script>
-
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Base fournisseur Braconnier</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -298,38 +298,39 @@ input,select,button{font-family:inherit}
 
 </script>
 <style id="unified-portal-header-style">
-.unified-header{background:#29343d!important;color:#fff!important;border-radius:13px!important;padding:15px 17px!important;min-height:72px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important;position:relative!important;top:auto!important;box-shadow:none!important}
-.unified-brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:210px}.unified-logo{width:42px!important;height:42px!important;min-width:42px!important;border-radius:9px!important;background:#f47b00!important;color:#fff!important;display:grid!important;place-items:center!important;font-weight:900!important;font-size:20px!important}.unified-brand h1{font-family:Arial,Helvetica,sans-serif!important;font-size:20px!important;line-height:1.1!important;margin:0!important;color:#fff!important}.unified-brand p{font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1.35!important;color:#d4dce1!important;margin:4px 0 0!important}
-.unified-nav{display:flex!important;gap:6px!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-end!important}.unified-nav a,.unified-nav button{border:0!important;border-radius:7px!important;padding:9px 11px!important;min-height:33px!important;background:#f47b00!important;color:#fff!important;text-decoration:none!important;font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1!important;font-weight:800!important;cursor:pointer!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}.unified-nav a:hover,.unified-nav button:hover{background:#dc6f00!important}
-@media(max-width:760px){.unified-header{border-radius:9px!important;padding:11px!important}.unified-brand{width:100%}.unified-nav{width:100%!important;justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:2px!important;scrollbar-width:thin}.unified-nav a,.unified-nav button{white-space:nowrap!important;flex:0 0 auto!important}}
+.unified-header{background:#29343d!important;color:#fff!important;border-radius:13px!important;padding:14px 16px!important;min-height:70px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;position:relative!important;top:auto!important;box-shadow:0 3px 12px rgba(20,27,32,.08)!important;z-index:1000!important}
+.unified-brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important;flex:1 1 auto!important}.unified-logo{width:42px!important;height:42px!important;min-width:42px!important;border-radius:9px!important;background:#f47b00!important;color:#fff!important;display:grid!important;place-items:center!important;font-weight:900!important;font-size:20px!important}.unified-brand h1{font-family:Arial,Helvetica,sans-serif!important;font-size:19px!important;line-height:1.1!important;margin:0!important;color:#fff!important}.unified-brand p{font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1.35!important;color:#d4dce1!important;margin:4px 0 0!important}
+.unified-tools{display:flex!important;align-items:center!important;gap:7px!important;flex:0 0 auto!important}.unified-menu-wrap{position:relative!important}.unified-menu-btn,.unified-logout{height:36px!important;border:0!important;border-radius:8px!important;padding:0 13px!important;color:#fff!important;font:800 10px Arial,Helvetica,sans-serif!important;cursor:pointer!important;display:inline-flex!important;align-items:center!important;gap:7px!important}.unified-menu-btn{background:#f47b00!important}.unified-menu-btn:hover{background:#dc6f00!important}.unified-logout{background:#46515a!important}.unified-logout:hover{background:#56636d!important}.unified-menu-icon{font-size:15px!important;line-height:1!important}
+.unified-menu{display:none!important;position:absolute!important;right:0!important;top:44px!important;width:255px!important;background:#fff!important;border:1px solid #dfe4e8!important;border-radius:12px!important;padding:7px!important;box-shadow:0 18px 45px rgba(20,27,32,.2)!important;z-index:99999!important}.unified-menu.open{display:block!important}.unified-menu a{display:flex!important;align-items:center!important;justify-content:space-between!important;width:100%!important;padding:10px 11px!important;border-radius:8px!important;color:#29343d!important;text-decoration:none!important;font:700 11px Arial,Helvetica,sans-serif!important;background:transparent!important}.unified-menu a:hover{background:#f4f6f7!important}.unified-menu a.active{background:#fff1e4!important;color:#c86200!important}.unified-menu a.active:after{content:'•';font-size:17px;color:#f47b00}.unified-page-actions{display:flex!important;gap:6px!important;align-items:center!important;margin-left:auto!important}.unified-page-actions button{height:36px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:8px!important;color:#fff!important;font:800 10px Arial,Helvetica,sans-serif!important;padding:0 11px!important;cursor:pointer!important;background:#3d4851!important}.unified-page-actions button:hover{background:#4a5660!important}
+@media(max-width:760px){.unified-header{border-radius:9px!important;padding:11px 12px!important;gap:9px!important;flex-wrap:wrap!important}.unified-brand{min-width:calc(100% - 120px)!important}.unified-brand h1{font-size:17px!important}.unified-brand p{display:none!important}.unified-tools{margin-left:auto!important}.unified-page-actions{order:3!important;width:100%!important;margin-left:0!important;overflow-x:auto!important}.unified-page-actions button{white-space:nowrap!important}.unified-logout{width:36px!important;padding:0!important;justify-content:center!important;font-size:0!important}.unified-logout:before{content:'↪';font-size:17px!important}.unified-menu{position:fixed!important;left:10px!important;right:10px!important;top:78px!important;width:auto!important;max-height:calc(100vh - 95px)!important;overflow:auto!important}}
 </style>
 </head><body>
 <div class="wrap">
-<header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Base fournisseurs</h1><p>Ets Braconnier · recherche, articles et documents</p></div></div><nav class="unified-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav></header>
+<header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Base fournisseurs</h1><p>Ets Braconnier · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a class="active" href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <div class="kpis">
-<button class="kpi" id="filterAll" type="button" data-status=""><b id="kTotal">0</b><span>Tous les fournisseurs</span></button>
-<button class="kpi" id="filterActive" type="button" data-status="Présence trouvée"><b id="kActive">0</b><span>Actifs vérifiés</span></button>
-<button class="kpi" id="filterChanged" type="button" data-status="Changement confirmé"><b id="kChanged">0</b><span>Reprises / changements confirmés</span></button>
-<button class="kpi" id="filterInactive" type="button" data-status="Inactif confirmé / signalé"><b id="kInactive">0</b><span>Inactifs confirmés</span></button>
+<button class="kpi" data-status="" id="filterAll" type="button"><b id="kTotal">0</b><span>Tous les fournisseurs</span></button>
+<button class="kpi" data-status="Présence trouvée" id="filterActive" type="button"><b id="kActive">0</b><span>Actifs vérifiés</span></button>
+<button class="kpi" data-status="Changement confirmé" id="filterChanged" type="button"><b id="kChanged">0</b><span>Reprises / changements confirmés</span></button>
+<button class="kpi" data-status="Inactif confirmé / signalé" id="filterInactive" type="button"><b id="kInactive">0</b><span>Inactifs confirmés</span></button>
 </div>
-<div id="storagePanel" class="storage-panel">
-  <div class="storage-row">
-    <strong>Stockage documents</strong>
-    <span id="storageText">Calcul du stockage…</span>
-  </div>
-  <div class="storage-track"><div id="storageFill" class="storage-fill"></div></div>
-  <div id="storageNote" class="storage-note">Limite de sécurité : 9,5 Go</div>
+<div class="storage-panel" id="storagePanel">
+<div class="storage-row">
+<strong>Stockage documents</strong>
+<span id="storageText">Calcul du stockage…</span>
+</div>
+<div class="storage-track"><div class="storage-fill" id="storageFill"></div></div>
+<div class="storage-note" id="storageNote">Limite de sécurité : 9,5 Go</div>
 </div>
 <div class="inactive-breakdown">
-<button class="mini-filter" type="button" data-inactive="Faillite">Faillites <b id="kBankrupt">0</b></button>
-<button class="mini-filter" type="button" data-inactive="Liquidation">Liquidations <b id="kLiquidation">0</b></button>
-<button class="mini-filter" type="button" data-inactive="Radiation">Radiations <b id="kRadiation">0</b></button>
-<button class="mini-filter" type="button" data-inactive="Fusion / absorption">Fusions / absorptions <b id="kFusion">0</b></button>
-<button class="mini-filter" type="button" data-inactive="Autre inactif">Autres inactifs <b id="kOtherInactive">0</b></button>
+<button class="mini-filter" data-inactive="Faillite" type="button">Faillites <b id="kBankrupt">0</b></button>
+<button class="mini-filter" data-inactive="Liquidation" type="button">Liquidations <b id="kLiquidation">0</b></button>
+<button class="mini-filter" data-inactive="Radiation" type="button">Radiations <b id="kRadiation">0</b></button>
+<button class="mini-filter" data-inactive="Fusion / absorption" type="button">Fusions / absorptions <b id="kFusion">0</b></button>
+<button class="mini-filter" data-inactive="Autre inactif" type="button">Autres inactifs <b id="kOtherInactive">0</b></button>
 </div>
 <div class="sub" style="margin-top:-5px">Clique sur un compteur pour afficher directement les fournisseurs concernés. Les fournisseurs sans catégorie sont indiqués séparément dans le filtre « Sans catégorie ».</div>
 <div class="box"><div class="controls">
-<input id="fq" placeholder="Fournisseur…"><div class="product-search-wrap"><input id="pq" placeholder="Matériau / produit…"><button id="barcodeScanBtn" class="barcode-scan-btn" type="button" aria-label="Scanner un code-barres" title="Scanner un code-barres" onclick="openBarcodeScanner()"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z"/></svg></button></div>
+<input id="fq" placeholder="Fournisseur…"/><div class="product-search-wrap"><input id="pq" placeholder="Matériau / produit…"/><button aria-label="Scanner un code-barres" class="barcode-scan-btn" id="barcodeScanBtn" onclick="openBarcodeScanner()" title="Scanner un code-barres" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z" fill="currentColor"></path></svg></button></div>
 <select id="sq">
 <option value="">Tous les statuts</option>
 <option value="Présence trouvée">Actifs vérifiés</option>
@@ -344,29 +345,28 @@ input,select,button{font-family:inherit}
 <option value="Fusion / absorption">Fusions / absorptions</option>
 <option value="Autre inactif">Autres inactifs</option>
 </select>
-<label class="filter-empty" style="display:flex;align-items:center;gap:6px"><input id="emptyOnly" type="checkbox" style="width:auto"> Sans catégorie (<b id="kEmpty">0</b>)</label>
+<label class="filter-empty" style="display:flex;align-items:center;gap:6px"><input id="emptyOnly" style="width:auto" type="checkbox"/> Sans catégorie (<b id="kEmpty">0</b>)</label>
 <div class="toolbar-actions">
- <button class="btn-refresh" onclick="loadSuppliersFromD1()" type="button">↻ Actualiser</button>
- <button class="btn-reset" onclick="resetAll()" type="button">Réinitialiser</button>
- <button class="btn-import" onclick="supplierImportInput.click()" type="button">Importer fournisseurs</button>
- <button class="btn-update" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()" type="button">Mettre à jour les articles</button>
- <button class="btn-export" onclick="exportSuppliersExcel()" type="button">Exporter fournisseurs</button>
- <button class="btn-zip" onclick="exportEverythingZip()" type="button">Exporter la base ZIP</button>
- <button id="addSupplier" class="btn-add" type="button" disabled onclick="openSupplierEditor()">＋ Fournisseur</button>
-</div><input id="supplierImportInput" type="file" accept=".xlsx,.xls" hidden><input id="globalArticleImportInput" type="file" accept=".xlsx,.xls" hidden>
-</div><div id="stats" class="stats"></div></div>
-<div id="cards" class="cards"></div></div>
-<div id="barcodeModal" aria-hidden="true">
- <div class="barcode-shell" role="dialog" aria-modal="true" aria-labelledby="barcodeTitle">
-  <div class="barcode-head"><div id="barcodeTitle" class="barcode-title">Scanner un code-barres</div><button class="barcode-close" type="button" onclick="closeBarcodeScanner()">Fermer ✕</button></div>
-  <div class="barcode-body"><div id="barcodeReader"></div><div id="barcodeStatus">Place le code-barres dans le cadre.</div></div>
- </div>
+<button class="btn-refresh" onclick="loadSuppliersFromD1()" type="button">↻ Actualiser</button>
+<button class="btn-reset" onclick="resetAll()" type="button">Réinitialiser</button>
+<button class="btn-import" onclick="supplierImportInput.click()" type="button">Importer fournisseurs</button>
+<button class="btn-update" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()" type="button">Mettre à jour les articles</button>
+<button class="btn-export" onclick="exportSuppliersExcel()" type="button">Exporter fournisseurs</button>
+<button class="btn-zip" onclick="exportEverythingZip()" type="button">Exporter la base ZIP</button>
+<button class="btn-add" disabled="" id="addSupplier" onclick="openSupplierEditor()" type="button">＋ Fournisseur</button>
+</div><input accept=".xlsx,.xls" hidden="" id="supplierImportInput" type="file"/><input accept=".xlsx,.xls" hidden="" id="globalArticleImportInput" type="file"/>
+</div><div class="stats" id="stats"></div></div>
+<div class="cards" id="cards"></div></div>
+<div aria-hidden="true" id="barcodeModal">
+<div aria-labelledby="barcodeTitle" aria-modal="true" class="barcode-shell" role="dialog">
+<div class="barcode-head"><div class="barcode-title" id="barcodeTitle">Scanner un code-barres</div><button class="barcode-close" onclick="closeBarcodeScanner()" type="button">Fermer ✕</button></div>
+<div class="barcode-body"><div id="barcodeReader"></div><div id="barcodeStatus">Place le code-barres dans le cadre.</div></div>
+</div>
 </div>
 <style id="articles-style">
 .article-btn{margin-top:12px;border:0;border-radius:9px;padding:8px 13px;background:#1f6f5f;color:#fff;font-weight:700;cursor:pointer}.article-btn:hover{filter:brightness(.94)}.article-btn.zero{background:#e5e7eb;color:#6b7280;cursor:default}
 #articleModal{display:none;position:fixed;inset:0;z-index:9999;background:#f6f7f9;overflow:auto}#articleModal.open{display:block}.article-shell{max-width:1500px;margin:auto;padding:20px}.article-top{position:sticky;top:0;z-index:3;background:#f6f7f9;padding:4px 0 14px}.article-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.article-title{font-size:24px;font-weight:800}.article-close{border:0;border-radius:9px;padding:9px 14px;background:#222;color:#fff;cursor:pointer}.article-search{width:100%;box-sizing:border-box;margin-top:12px;padding:12px 14px;border:1px solid #ccd2d8;border-radius:10px;font-size:16px;background:#fff}.article-info{margin:8px 0;color:#667085}.article-table-wrap{overflow:auto;background:#fff;border-radius:12px;border:1px solid #e4e7ec}.article-table{border-collapse:collapse;width:100%;min-width:1180px}.article-table th,.article-table td{padding:9px 10px;border-bottom:1px solid #eceff2;text-align:left;vertical-align:top}.article-table th{position:sticky;top:0;background:#eef2f3;font-size:13px;white-space:nowrap;cursor:pointer}.article-table td{font-size:13px}.article-table tr:hover td{background:#f8fafb}.article-empty{padding:30px;text-align:center;color:#667085}</style>
-<div id="articleModal" aria-hidden="true"><div class="article-shell"><div class="article-top"><div class="article-head"><div><div class="article-title" id="articleTitle">Articles</div><div class="article-info" id="articleInfo"></div></div><div class="article-actions"><button class="import-btn" onclick="articleImportInput.click()">Importer Excel</button><button class="export-btn" onclick="exportCurrentArticlesExcel()">Exporter Excel</button><button class="article-close" onclick="closeArticles()">Fermer ✕</button><input id="articleImportInput" type="file" accept=".xlsx,.xls" hidden></div></div><input id="articleSearch" class="article-search" type="search" placeholder="Recherche tolérante : article, référence, désignation, EAN…"></div><div class="article-table-wrap"><table class="article-table"><thead><tr><th data-col="0">N° d'article</th><th data-col="1">Num fournisseur</th><th data-col="2">Nomfour</th><th data-col="4">Dénomination</th><th data-col="5">Unité</th><th data-col="6">Emballage</th><th data-col="7">Groupe principal</th><th data-col="8">Sous-groupe</th><th data-col="9">Code EAN</th></tr></thead><tbody id="articleBody"></tbody></table></div></div></div>
-
+<div aria-hidden="true" id="articleModal"><div class="article-shell"><div class="article-top"><div class="article-head"><div><div class="article-title" id="articleTitle">Articles</div><div class="article-info" id="articleInfo"></div></div><div class="article-actions"><button class="import-btn" onclick="articleImportInput.click()">Importer Excel</button><button class="export-btn" onclick="exportCurrentArticlesExcel()">Exporter Excel</button><button class="article-close" onclick="closeArticles()">Fermer ✕</button><input accept=".xlsx,.xls" hidden="" id="articleImportInput" type="file"/></div></div><input class="article-search" id="articleSearch" placeholder="Recherche tolérante : article, référence, désignation, EAN…" type="search"/></div><div class="article-table-wrap"><table class="article-table"><thead><tr><th data-col="0">N° d'article</th><th data-col="1">Num fournisseur</th><th data-col="2">Nomfour</th><th data-col="4">Dénomination</th><th data-col="5">Unité</th><th data-col="6">Emballage</th><th data-col="7">Groupe principal</th><th data-col="8">Sous-groupe</th><th data-col="9">Code EAN</th></tr></thead><tbody id="articleBody"></tbody></table></div></div></div>
 <style id="tariff-style">
 #tariffModal{display:none;position:fixed;inset:0;z-index:10000;background:#f3f5f6;overflow:auto}
 #tariffModal.open{display:block}
@@ -409,33 +409,32 @@ input,select,button{font-family:inherit}
 .upload-progress{margin:8px 0;font-size:10px;color:#59636d}
 @media(max-width:650px){.file-card{grid-template-columns:36px 1fr}.file-buttons{grid-column:1/-1}.file-toolbar{align-items:stretch;flex-direction:column}.file-info{white-space:normal}}
 </style>
-
-<div id="tariffModal" aria-hidden="true">
-  <div class="tariff-shell">
-    <div class="tariff-top">
-      <div class="tariff-head">
-        <div>
-          <div class="tariff-title" id="tariffTitle">Documents fournisseur</div>
-          <div class="tariff-sub" id="tariffSupplierInfo"></div>
-        </div>
-        <div class="file-actions">
-          <button class="file-upload-btn" type="button" onclick="supplierFileInput.click()">Ajouter des fichiers</button>
-          <button class="article-close" onclick="closeTariffs()">Fermer ✕</button>
-          <input id="supplierFileInput" type="file" multiple hidden>
-        </div>
-      </div>
-      <div id="fileDropZone" class="file-drop">
-        <b>Glissez-déposez vos fichiers ici</b>
-        <small>Excel, PDF, Word, images, ZIP, CSV, documents techniques…</small>
-      </div>
-      <div class="file-toolbar">
-        <input id="supplierFileSearch" class="file-search" type="search" placeholder="Rechercher un fichier…">
-        <div id="supplierFileInfo" class="file-info"></div>
-      </div>
-      <div id="uploadProgress" class="upload-progress"></div>
-    </div>
-    <div id="supplierFileList" class="file-list"></div>
-  </div>
+<div aria-hidden="true" id="tariffModal">
+<div class="tariff-shell">
+<div class="tariff-top">
+<div class="tariff-head">
+<div>
+<div class="tariff-title" id="tariffTitle">Documents fournisseur</div>
+<div class="tariff-sub" id="tariffSupplierInfo"></div>
+</div>
+<div class="file-actions">
+<button class="file-upload-btn" onclick="supplierFileInput.click()" type="button">Ajouter des fichiers</button>
+<button class="article-close" onclick="closeTariffs()">Fermer ✕</button>
+<input hidden="" id="supplierFileInput" multiple="" type="file"/>
+</div>
+</div>
+<div class="file-drop" id="fileDropZone">
+<b>Glissez-déposez vos fichiers ici</b>
+<small>Excel, PDF, Word, images, ZIP, CSV, documents techniques…</small>
+</div>
+<div class="file-toolbar">
+<input class="file-search" id="supplierFileSearch" placeholder="Rechercher un fichier…" type="search"/>
+<div class="file-info" id="supplierFileInfo"></div>
+</div>
+<div class="upload-progress" id="uploadProgress"></div>
+</div>
+<div class="file-list" id="supplierFileList"></div>
+</div>
 </div>
 <style>
 #supplierEditor{width:min(640px,90vw);max-height:85vh;overflow:auto;border:1px solid #dde2e6;border-radius:12px;padding:24px;color:#29343d}
@@ -445,38 +444,36 @@ input,select,button{font-family:inherit}
 .supplier-editor-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:15px}.supplier-editor-actions button{padding:10px 15px;border:0;border-radius:6px;cursor:pointer}#saveSupplier{background:#f47b00;color:white}#supplierSaveMessage{color:#9b2c2c;font-size:12px}
 @media(max-width:600px){.supplier-fields{grid-template-columns:1fr}}
 </style>
-<dialog id="supplierEditor" aria-labelledby="supplierEditorTitle">
- <h2 id="supplierEditorTitle">Fournisseur</h2>
- <form id="supplierForm">
-  <div class="supplier-fields">
-   <label class="wide">Nom du fournisseur *<input name="nom" required maxlength="250"></label>
-   <label>Nom actuel<input name="nom_actuel" maxlength="250"></label>
-   <label>N° TVA / entreprise<input name="tva" maxlength="80"></label>
-   <label>Pays<input name="pays" maxlength="100"></label>
-   <label>Statut<select name="statut_source"><option>À vérifier</option><option value="Présence trouvée">Actif vérifié</option><option>Changement confirmé</option><option value="Inactif confirmé / signalé">Inactif</option></select></label>
-   <label class="wide">Adresse<input name="adresse" maxlength="500"></label>
-   <label>Type d’inactivité<select name="type_inactif"><option value="">Non applicable</option><option>Faillite</option><option>Liquidation</option><option>Radiation</option><option>Fusion / absorption</option><option>Autre inactif</option></select></label>
-   <label>Précision sur le statut<input name="existence" maxlength="500"></label>
-   <label class="wide">Catégories — une par ligne<textarea name="categories" rows="4"></textarea></label>
-   <label class="wide">Source de contrôle<input name="source" type="url" placeholder="https://…"></label>
-   <label class="wide">Note<textarea name="note" rows="3"></textarea></label>
-   <label class="wide">Mot de passe administrateur *<input name="password" type="password" required autocomplete="current-password"></label>
-  </div>
-  <p id="supplierSaveMessage" role="status" aria-live="polite"></p>
-  <div class="supplier-editor-actions"><button type="button" onclick="supplierEditor.close()">Annuler</button><button id="saveSupplier" type="submit">Enregistrer</button></div>
- </form>
+<dialog aria-labelledby="supplierEditorTitle" id="supplierEditor">
+<h2 id="supplierEditorTitle">Fournisseur</h2>
+<form id="supplierForm">
+<div class="supplier-fields">
+<label class="wide">Nom du fournisseur *<input maxlength="250" name="nom" required=""/></label>
+<label>Nom actuel<input maxlength="250" name="nom_actuel"/></label>
+<label>N° TVA / entreprise<input maxlength="80" name="tva"/></label>
+<label>Pays<input maxlength="100" name="pays"/></label>
+<label>Statut<select name="statut_source"><option>À vérifier</option><option value="Présence trouvée">Actif vérifié</option><option>Changement confirmé</option><option value="Inactif confirmé / signalé">Inactif</option></select></label>
+<label class="wide">Adresse<input maxlength="500" name="adresse"/></label>
+<label>Type d’inactivité<select name="type_inactif"><option value="">Non applicable</option><option>Faillite</option><option>Liquidation</option><option>Radiation</option><option>Fusion / absorption</option><option>Autre inactif</option></select></label>
+<label>Précision sur le statut<input maxlength="500" name="existence"/></label>
+<label class="wide">Catégories — une par ligne<textarea name="categories" rows="4"></textarea></label>
+<label class="wide">Source de contrôle<input name="source" placeholder="https://…" type="url"/></label>
+<label class="wide">Note<textarea name="note" rows="3"></textarea></label>
+<label class="wide">Mot de passe administrateur *<input autocomplete="current-password" name="password" required="" type="password"/></label>
+</div>
+<p aria-live="polite" id="supplierSaveMessage" role="status"></p>
+<div class="supplier-editor-actions"><button onclick="supplierEditor.close()" type="button">Annuler</button><button id="saveSupplier" type="submit">Enregistrer</button></div>
+</form>
 </dialog>
-
 <style>
 #supplierMatchDialog{width:min(1050px,96vw);max-height:90vh;border:1px solid #dde2e6;border-radius:12px;padding:20px;color:#29343d}
 #supplierMatchDialog::backdrop{background:#0008}.match-head{position:sticky;top:-20px;background:white;padding:4px 0 12px;z-index:2}.match-list{display:grid;gap:8px}.match-row{display:grid;grid-template-columns:minmax(210px,1fr) 90px minmax(260px,1.2fr) 110px;gap:10px;align-items:center;padding:8px;border:1px solid #e1e5e8;border-radius:7px}.match-row select,.match-row input{width:100%;padding:7px;border:1px solid #cbd4dc;border-radius:7px;font:inherit}.match-count{text-align:right;font-weight:700}.match-create{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#b35f00;white-space:nowrap}.match-create input{width:auto!important;accent-color:#f47b00}.match-actions{position:sticky;bottom:-20px;background:white;padding:12px 0 4px;display:flex;justify-content:flex-end;gap:10px}.match-actions button{padding:10px 16px;border:0;border-radius:7px;cursor:pointer}.match-apply{background:#f47b00;color:white}@media(max-width:700px){.match-row{grid-template-columns:1fr}.match-count{text-align:left}}
 </style>
 <dialog id="supplierMatchDialog">
- <div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Tape quelques lettres pour rechercher parmi TOUS les fournisseurs Cloudflare (ex. AUBIA → tape MOORIS). Les correspondances validées seront mémorisées pour les prochaines mises à jour. Si le fournisseur n’existe pas, coche « Créer » pour le créer automatiquement dans Cloudflare avant l’import. Laisse vide pour ignorer.</small></div>
- <div id="supplierMatchList" class="match-list"></div>
- <div class="match-actions"><button type="button" id="supplierMatchCancel">Annuler la mise à jour</button><button type="button" class="match-apply" id="supplierMatchApply">Utiliser ces correspondances</button></div>
+<div class="match-head"><h2 style="margin:0 0 8px">Correspondance des fournisseurs non reconnus</h2><div id="supplierMatchInfo"></div><small>Pour chaque nom du fichier, choisis le fournisseur Cloudflare correspondant. Tape quelques lettres pour rechercher parmi TOUS les fournisseurs Cloudflare (ex. AUBIA → tape MOORIS). Les correspondances validées seront mémorisées pour les prochaines mises à jour. Si le fournisseur n’existe pas, coche « Créer » pour le créer automatiquement dans Cloudflare avant l’import. Laisse vide pour ignorer.</small></div>
+<div class="match-list" id="supplierMatchList"></div>
+<div class="match-actions"><button id="supplierMatchCancel" type="button">Annuler la mise à jour</button><button class="match-apply" id="supplierMatchApply" type="button">Utiliser ces correspondances</button></div>
 </dialog>
-
 <script>
 const DATA=[];
 const ARTICLES={};
@@ -2088,4 +2085,4 @@ pq.addEventListener("input",()=>scheduleServerProductSearch(false));
 loadSuppliersFromD1();
 loadStorageIndicator();
 
-</script></body></html>
+</script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>
