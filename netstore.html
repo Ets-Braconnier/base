@@ -71,13 +71,17 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
  });
 })();
 
-</script></head>
+</script>
+<style id="unified-portal-header-style">
+.unified-header{background:#29343d!important;color:#fff!important;border-radius:13px!important;padding:15px 17px!important;min-height:72px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important;position:relative!important;top:auto!important;box-shadow:none!important}
+.unified-brand{display:flex!important;align-items:center!important;gap:11px!important;min-width:210px}.unified-logo{width:42px!important;height:42px!important;min-width:42px!important;border-radius:9px!important;background:#f47b00!important;color:#fff!important;display:grid!important;place-items:center!important;font-weight:900!important;font-size:20px!important}.unified-brand h1{font-family:Arial,Helvetica,sans-serif!important;font-size:20px!important;line-height:1.1!important;margin:0!important;color:#fff!important}.unified-brand p{font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1.35!important;color:#d4dce1!important;margin:4px 0 0!important}
+.unified-nav{display:flex!important;gap:6px!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-end!important}.unified-nav a,.unified-nav button{border:0!important;border-radius:7px!important;padding:9px 11px!important;min-height:33px!important;background:#f47b00!important;color:#fff!important;text-decoration:none!important;font-family:Arial,Helvetica,sans-serif!important;font-size:10px!important;line-height:1!important;font-weight:800!important;cursor:pointer!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}.unified-nav a:hover,.unified-nav button:hover{background:#dc6f00!important}
+@media(max-width:760px){.unified-header{border-radius:9px!important;padding:11px!important}.unified-brand{width:100%}.unified-nav{width:100%!important;justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:2px!important;scrollbar-width:thin}.unified-nav a,.unified-nav button{white-space:nowrap!important;flex:0 0 auto!important}}
+</style>
+</head>
 <body>
 <div class="wrap">
-<header class="portal-header">
- <div class="portal-brand"><div class="portal-logo">B</div><div><h1>NetStore</h1><p>Ets Braconnier · fournisseurs en ligne et accès sécurisés</p></div></div>
- <nav class="portal-nav" aria-label="Navigation principale"><button type="button" class="add-supplier-btn" onclick="openSupplierModal()">＋ Ajouter un fournisseur</button><a href="index.html">Accueil</a><a href="fournisseurs.html">Base fournisseurs</a><a href="calculs.html">Calculs</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav>
-</header>
+<header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>NetStore</h1><p>Ets Braconnier · fournisseurs en ligne et accès sécurisés</p></div></div><nav class="unified-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a><button type="button" onclick="portalLogout()">Déconnexion</button></nav></header>
 <div class="search-bar"><input id="q" class="search" type="search" aria-label="Rechercher un fournisseur" placeholder="Rechercher un fournisseur…" oninput="filterAll()"></div>
 <section class="section c0">
   <div class="category"><strong>⚡ &nbsp;ÉLECTRICITÉ</strong></div>
