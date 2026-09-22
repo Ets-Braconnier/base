@@ -54,7 +54,7 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 .wrap{max-width:1600px;padding:18px}.portal-header{background:#29343d;color:white;border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}.portal-brand{display:flex;align-items:center;gap:12px}.portal-logo{width:44px;height:44px;border-radius:10px;background:#f47b00;display:grid;place-items:center;font-size:24px;font-weight:bold}.portal-brand h1{font-size:23px;margin:0}.portal-brand p{font-size:12px;margin:5px 0 0;color:#d5dde1}.portal-nav{display:flex;gap:8px;flex-wrap:wrap}.portal-nav a,.portal-nav button{background:#f47b00;color:white;border:0;border-radius:7px;padding:10px 12px;font:700 12px Arial;text-decoration:none;cursor:pointer}.portal-nav a:hover,.portal-nav button:hover{background:#dc6f00}.search-bar{margin-bottom:16px}.search-bar .search{margin:0;width:100%;height:40px;border:1px solid #dde2e6;font-size:13px;background:white}.portal-nav :focus-visible{outline:3px solid white;outline-offset:2px}@media(max-width:750px){.wrap{padding:10px}.portal-header{padding:16px}}
 .card{min-width:0}.actions{grid-template-columns:minmax(0,82px) minmax(0,88px)}.portal-brand{min-width:0}.portal-brand>div:last-child{min-width:0}.portal-logo{flex-shrink:0}@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:370px){.grid{grid-template-columns:1fr}}
 .add-supplier-btn{background:#fff!important;color:#f47b00!important;border:1px solid #f47b00!important}.add-supplier-btn:hover{background:#fff6ed!important}
-.modal-overlay{position:fixed;inset:0;background:rgba(20,27,33,.58);z-index:20000;display:none;align-items:center;justify-content:center;padding:18px}.modal-overlay.open{display:flex}.supplier-modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:20px}.supplier-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.supplier-modal-head h2{font-size:18px;margin:0}.modal-x{border:0;background:#eef1f3;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:18px}.supplier-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.supplier-form label{font-size:11px;font-weight:700;color:#34404a;display:flex;flex-direction:column;gap:5px}.supplier-form .full{grid-column:1/-1}.supplier-form input,.supplier-form select{height:38px;border:1px solid #d9dee3;border-radius:7px;padding:0 10px;font:12px Arial;background:#fff}.supplier-form input:focus,.supplier-form select:focus{outline:2px solid #f47b00;outline-offset:1px}.form-note{grid-column:1/-1;font-size:10px;color:#69757e;margin-top:-3px}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:5px}.form-actions button{height:36px;border-radius:7px;padding:0 15px;font:700 11px Arial;cursor:pointer}.cancel-btn{background:#eef1f3;border:0;color:#27323c}.save-btn{background:#f47b00;border:0;color:#fff}.save-btn:disabled{opacity:.55;cursor:wait}.dynamic-badge{font-size:8px;color:#6b7280;margin-top:2px}.card[data-dynamic-card="1"] .actions{grid-template-columns:repeat(3,minmax(0,72px))}.edit-supplier-btn{border:1px solid #d9dee3!important;background:#eef1f3!important;color:#29343d!important}.edit-supplier-btn:hover{background:#dde3e7!important}@media(max-width:560px){.supplier-form{grid-template-columns:1fr}.supplier-form .full,.form-note,.form-actions{grid-column:1}}
+.modal-overlay{position:fixed;inset:0;background:rgba(20,27,33,.58);z-index:20000;display:none;align-items:center;justify-content:center;padding:18px}.modal-overlay.open{display:flex}.supplier-modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:20px}.supplier-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.supplier-modal-head h2{font-size:18px;margin:0}.modal-x{border:0;background:#eef1f3;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:18px}.supplier-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.supplier-form label{font-size:11px;font-weight:700;color:#34404a;display:flex;flex-direction:column;gap:5px}.supplier-form .full{grid-column:1/-1}.supplier-form input,.supplier-form select{height:38px;border:1px solid #d9dee3;border-radius:7px;padding:0 10px;font:12px Arial;background:#fff}.supplier-form input:focus,.supplier-form select:focus{outline:2px solid #f47b00;outline-offset:1px}.form-note{grid-column:1/-1;font-size:10px;color:#69757e;margin-top:-3px}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:5px}.form-actions button{height:36px;border-radius:7px;padding:0 15px;font:700 11px Arial;cursor:pointer}.cancel-btn{background:#eef1f3;border:0;color:#27323c}.save-btn{background:#f47b00;border:0;color:#fff}.save-btn:disabled{opacity:.55;cursor:wait}.dynamic-badge{font-size:8px;color:#6b7280;margin-top:2px}.card .actions{grid-template-columns:repeat(3,minmax(0,72px))}.edit-supplier-btn{border:1px solid #d9dee3!important;background:#eef1f3!important;color:#29343d!important}.edit-supplier-btn:hover{background:#dde3e7!important}@media(max-width:560px){.supplier-form{grid-template-columns:1fr}.supplier-form .full,.form-note,.form-actions{grid-column:1}}
 </style><script>
 (() => {
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
@@ -383,7 +383,7 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 <div aria-labelledby="supplierModalTitle" aria-modal="true" class="modal-overlay" id="supplierModal" onclick="if(event.target===this)closeSupplierModal()" role="dialog">
 <div class="supplier-modal">
 <div class="supplier-modal-head"><h2 id="supplierModalTitle">Ajouter un fournisseur</h2><button aria-label="Fermer" class="modal-x" onclick="closeSupplierModal()" type="button">×</button></div>
-<form class="supplier-form" id="supplierForm" onsubmit="saveSupplier(event)"><input id="supplierEditId" type="hidden" value=""/>
+<form class="supplier-form" id="supplierForm" onsubmit="saveSupplier(event)"><input id="supplierEditId" type="hidden" value=""/><input id="supplierLegacyName" type="hidden" value=""/>
 <label>Nom du fournisseur<input autocomplete="off" id="supplierName" maxlength="160" required=""/></label>
 <label>Catégorie<select id="supplierCategory" required="">
 <option value="ÉLECTRICITÉ">⚡ ÉLECTRICITÉ</option><option value="SANITAIRE &amp; CHAUFFAGE">● SANITAIRE &amp; CHAUFFAGE</option><option value="OUTILLAGE &amp; FIXATIONS">🔧 OUTILLAGE &amp; FIXATIONS</option><option value="MATÉRIAUX DE CONSTRUCTION">▦ MATÉRIAUX DE CONSTRUCTION</option><option value="MENUISERIE &amp; AMÉNAGEMENT">▤ MENUISERIE &amp; AMÉNAGEMENT</option><option value="AUTRES">• AUTRES</option>
@@ -454,7 +454,7 @@ function fallbackLogo(url){try{return `https://www.google.com/s2/favicons?domain
 function authHeaders(jsonBody=false){const t=sessionStorage.getItem(PORTAL_TOKEN_KEY);const h={"Authorization":"Bearer "+t};if(jsonBody)h["Content-Type"]="application/json";return h;}
 
 let dynamicSupplierCache=[];
-function resetSupplierForm(){document.getElementById("supplierForm").reset();document.getElementById("supplierEditId").value="";document.getElementById("supplierModalTitle").textContent="Ajouter un fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer";}
+function resetSupplierForm(){document.getElementById("supplierForm").reset();document.getElementById("supplierEditId").value="";document.getElementById("supplierLegacyName").value="";document.getElementById("supplierModalTitle").textContent="Ajouter un fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer";}
 function openSupplierModal(){resetSupplierForm();document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);}
 function closeSupplierModal(){document.getElementById("supplierModal").classList.remove("open");}
 async function editSupplier(id){
@@ -464,11 +464,46 @@ async function editSupplier(id){
  try{const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id)+"/credentials",{headers:authHeaders()});if(r.ok){const c=await r.json();document.getElementById("supplierUsername").value=c.i||"";document.getElementById("supplierPassword").value=c.p||"";}}catch{}
  document.getElementById("supplierModalTitle").textContent="Modifier le fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer les modifications";document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);
 }
+
+function categoryFromSection(section){
+ const hit=Object.entries(CATEGORY_META).find(([,m])=>section?.classList.contains(m.cls));
+ return hit?hit[0]:"AUTRES";
+}
+async function editLegacySupplier(card){
+ const name=card.querySelector('.supplier-name')?.textContent?.trim()||"";
+ const link=card.querySelector('.actions a');
+ const img=card.querySelector('.logo-box img');
+ const access=card.querySelector('.actions button:not(.edit-supplier-btn)');
+ const onclick=access?.getAttribute('onclick')||"";
+ const m=onclick.match(/showCredentials\((\d+)\)/);
+ resetSupplierForm();
+ document.getElementById("supplierLegacyName").value=name;
+ document.getElementById("supplierName").value=name;
+ document.getElementById("supplierCategory").value=categoryFromSection(card.closest('.section'));
+ document.getElementById("supplierUrl").value=link?.href||"";
+ const src=img?.getAttribute('src')||"";
+ document.getElementById("supplierLogo").value=src.startsWith('data:')||src.includes('google.com/s2/favicons')?"":src;
+ if(m){try{const r=await fetch(AUTH_API+"/credentials/"+m[1],{headers:authHeaders()});if(r.ok){const c=await r.json();document.getElementById("supplierUsername").value=c.i||"";document.getElementById("supplierPassword").value=c.p||"";}}catch{}}
+ document.getElementById("supplierModalTitle").textContent="Modifier le fournisseur";
+ document.getElementById("saveSupplierBtn").textContent="Enregistrer les modifications";
+ document.getElementById("supplierModal").classList.add("open");
+}
+function enableLegacyEditing(){
+ document.querySelectorAll('.card:not([data-dynamic-card="1"])').forEach(card=>{
+  const actions=card.querySelector('.actions'); if(!actions||actions.querySelector('.edit-supplier-btn'))return;
+  const b=document.createElement('button'); b.type='button';b.className='edit-supplier-btn';b.textContent='Modifier';
+  const access=actions.querySelector('button');actions.insertBefore(b,access);b.addEventListener('click',()=>editLegacySupplier(card));
+ });
+}
+function legacyMap(){try{return JSON.parse(localStorage.getItem('netstore_legacy_migrated_v1')||'{}')}catch{return {}}}
+function rememberLegacy(oldName,id){const m=legacyMap();m[String(oldName).toLowerCase()]=String(id||'1');localStorage.setItem('netstore_legacy_migrated_v1',JSON.stringify(m));}
+function hideMigratedLegacy(){const m=legacyMap();document.querySelectorAll('.card:not([data-dynamic-card="1"])').forEach(c=>{if(m[c.dataset.name])c.style.display='none';});}
+
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSupplierModal();});
 
 async function saveSupplier(e){
  e.preventDefault();
- const btn=document.getElementById("saveSupplierBtn"),id=document.getElementById("supplierEditId").value;btn.disabled=true;btn.textContent="Enregistrement…";
+ const btn=document.getElementById("saveSupplierBtn"),id=document.getElementById("supplierEditId").value,legacyName=document.getElementById("supplierLegacyName").value;btn.disabled=true;btn.textContent="Enregistrement…";
  const body={name:document.getElementById("supplierName").value.trim(),category:document.getElementById("supplierCategory").value,url:document.getElementById("supplierUrl").value.trim(),logo_url:document.getElementById("supplierLogo").value.trim(),username:document.getElementById("supplierUsername").value,password:document.getElementById("supplierPassword").value,display_order:0,active:1};
  try{
   let r,data;
@@ -479,7 +514,8 @@ async function saveSupplier(e){
   data=await r.json().catch(()=>({}));
   if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(data.error||(id?"La modification n’est pas encore acceptée par l’API.":"Impossible d’enregistrer le fournisseur."));
-  resetSupplierForm();closeSupplierModal();await loadDynamicSuppliers();alert(id?"Fournisseur modifié.":"Fournisseur ajouté.");
+  if(legacyName) rememberLegacy(legacyName,data.id||data.supplier?.id||data.supplier_id||"1");
+  resetSupplierForm();closeSupplierModal();await loadDynamicSuppliers();alert((id||legacyName)?"Fournisseur modifié.":"Fournisseur ajouté.");
  }catch(err){alert(err.message||"Erreur lors de l’enregistrement.");}
  finally{btn.disabled=false;btn.textContent=id?"Enregistrer les modifications":"Enregistrer";}
 }
@@ -502,6 +538,7 @@ async function loadDynamicSuppliers(){
   if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(data.error||"Chargement impossible.");
   dynamicSupplierCache=data.suppliers||[];
+  hideMigratedLegacy();
 
   // Nettoie uniquement les fournisseurs ajoutés dynamiquement lors du chargement précédent.
   document.querySelectorAll('.card[data-dynamic-card="1"]').forEach(card=>card.remove());
@@ -542,6 +579,8 @@ async function loadDynamicSuppliers(){
   filterAll();
  }catch(err){console.error("NetStore D1:",err);}
 }
+enableLegacyEditing();
+hideMigratedLegacy();
 loadDynamicSuppliers();
 
 function showNetStore(){
