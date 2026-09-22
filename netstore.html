@@ -488,19 +488,41 @@ async function loadDynamicSuppliers(){
   const data=await r.json().catch(()=>({}));
   if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(data.error||"Chargement impossible.");
-  const groups={};for(const x of (data.suppliers||[])){(groups[x.category]??=[]).push(x);}
+
+  // Nettoie uniquement les fournisseurs ajoutés dynamiquement lors du chargement précédent.
+  document.querySelectorAll('.card[data-dynamic-card="1"]').forEach(card=>card.remove());
   host.innerHTML="";
+
+  const groups={};
+  for(const x of (data.suppliers||[])){(groups[x.category]??=[]).push(x);}
+
   Object.entries(groups).forEach(([cat,items])=>{
    const meta=CATEGORY_META[cat]||CATEGORY_META.AUTRES;
-   const section=document.createElement("section");section.className="section "+meta.cls;section.dataset.dynamic="1";
-   section.innerHTML=`<div class="category"><strong>${meta.label}</strong></div><div class="grid"></div>`;
-   const grid=section.querySelector(".grid");
+
+   // Réutilise en priorité la section déjà présente dans la page (c0, c1, c2...).
+   let section=[...document.querySelectorAll('.section')].find(s=>s.classList.contains(meta.cls) && s.dataset.dynamic!=="1");
+   let grid=section?.querySelector('.grid');
+
+   // Seulement si la catégorie n'existe réellement pas (ex. AUTRES), on en crée une nouvelle.
+   if(!grid){
+    section=document.createElement("section");
+    section.className="section "+meta.cls;
+    section.dataset.dynamic="1";
+    section.innerHTML=`<div class="category"><strong>${meta.label}</strong></div><div class="grid"></div>`;
+    host.appendChild(section);
+    grid=section.querySelector('.grid');
+   }
+
    items.forEach(x=>{
     const logo=x.logo_url||fallbackLogo(x.url), name=esc(x.name), url=esc(x.url), img=esc(logo), init=esc(initials(x.name));
-    const card=document.createElement("article");card.className="card";card.dataset.name=String(x.name||"").toLowerCase();
+    const card=document.createElement("article");
+    card.className="card";
+    card.dataset.name=String(x.name||"").toLowerCase();
+    card.dataset.dynamicCard="1";
     card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button type="button">Accès</button></div>`;
-    card.querySelector("button").addEventListener("click",()=>showDynamicCredentials(x.id));grid.appendChild(card);
-   });host.appendChild(section);
+    card.querySelector("button").addEventListener("click",()=>showDynamicCredentials(x.id));
+    grid.appendChild(card);
+   });
   });
   filterAll();
  }catch(err){console.error("NetStore D1:",err);}
