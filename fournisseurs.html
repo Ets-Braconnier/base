@@ -241,21 +241,17 @@ input,select,button{font-family:inherit}
 #barcodeReader{width:100%;min-height:260px;background:#111;border-radius:10px;overflow:hidden}
 #barcodeReader video{object-fit:cover}
 #barcodeStatus{font-size:11px;color:#667085;text-align:center;margin:9px 2px 2px;line-height:1.4}
-/* Barre d’actions compacte */
+/* Barre d’actions professionnelle */
 .controls{grid-template-columns:minmax(190px,1fr) minmax(190px,1fr) 190px 175px auto!important}
 .controls .filter-empty{white-space:nowrap;font-size:11px;padding:0 8px!important;height:35px}
-.toolbar-actions{grid-column:1/-1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:2px}
-.toolbar-actions button{height:32px!important;min-height:32px!important;padding:0 11px!important;border-radius:6px!important;font-size:10px!important;font-weight:800!important;box-shadow:none!important;white-space:nowrap}
-.toolbar-actions .btn-refresh{background:#315f86}
-.toolbar-actions .btn-reset{background:#69737c}
-.toolbar-actions .btn-add{background:var(--brand);margin-left:auto}
-.toolbar-actions .btn-import{background:#b7791f}
-.toolbar-actions .btn-update{background:#9a671d}
-.toolbar-actions .btn-export{background:#217346}
-.toolbar-actions .btn-zip{background:#14532d}
-.toolbar-actions button:hover{filter:brightness(.95);transform:translateY(-1px)}
-@media(max-width:1000px){.controls{grid-template-columns:1fr 1fr!important}.toolbar-actions{grid-column:1/-1}.toolbar-actions .btn-add{margin-left:0}}
-@media(max-width:700px){.controls{grid-template-columns:1fr!important}.toolbar-actions{display:grid;grid-template-columns:1fr 1fr}.toolbar-actions button{width:100%}.toolbar-actions .btn-add{margin-left:0}}
+.toolbar-actions{grid-column:1/-1;display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;padding-top:6px}
+.action-group{display:flex;align-items:center;gap:6px;padding:5px;background:#f5f7f8;border:1px solid #e1e6e9;border-radius:9px}
+.action-group.export-group{margin-left:auto;background:#f3f8f5;border-color:#d9e8df}
+.toolbar-actions button{height:34px!important;min-height:34px!important;padding:0 12px!important;border-radius:7px!important;font-size:10px!important;font-weight:800!important;box-shadow:none!important;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.toolbar-actions .btn-refresh{background:#315f86}.toolbar-actions .btn-reset{background:#69737c}.toolbar-actions .btn-import{background:#b7791f}.toolbar-actions .btn-update{background:#9a671d}.toolbar-actions .btn-export{background:#217346}.toolbar-actions .btn-articles-zip{background:#14532d}.toolbar-actions .btn-add{background:var(--brand);box-shadow:0 2px 6px rgba(244,123,0,.18)!important}
+.toolbar-actions button:hover{filter:brightness(.96);transform:translateY(-1px)}
+@media(max-width:1100px){.controls{grid-template-columns:1fr 1fr!important}.toolbar-actions{grid-column:1/-1}.action-group.export-group{margin-left:0}}
+@media(max-width:700px){.controls{grid-template-columns:1fr!important}.toolbar-actions{display:grid;grid-template-columns:1fr}.action-group{display:grid;grid-template-columns:1fr 1fr;width:100%;box-sizing:border-box}.action-group.export-group{margin-left:0}.toolbar-actions button{width:100%;justify-content:center}}
 
 /* Résultats articles directement sur la page principale */
 .product-results{display:grid;gap:7px;margin-top:9px}
@@ -347,13 +343,10 @@ input,select,button{font-family:inherit}
 </select>
 <label class="filter-empty" style="display:flex;align-items:center;gap:6px"><input id="emptyOnly" style="width:auto" type="checkbox"/> Sans catégorie (<b id="kEmpty">0</b>)</label>
 <div class="toolbar-actions">
-<button class="btn-refresh" onclick="loadSuppliersFromD1()" type="button">↻ Actualiser</button>
-<button class="btn-reset" onclick="resetAll()" type="button">Réinitialiser</button>
-<button class="btn-import" onclick="supplierImportInput.click()" type="button">Importer fournisseurs</button>
-<button class="btn-update" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()" type="button">Mettre à jour les articles</button>
-<button class="btn-export" onclick="exportSuppliersExcel()" type="button">Exporter fournisseurs</button>
-<button class="btn-zip" onclick="exportEverythingZip()" type="button">Exporter la base ZIP</button>
-<button class="btn-add" disabled="" id="addSupplier" onclick="openSupplierEditor()" type="button">＋ Fournisseur</button>
+<div class="action-group" aria-label="Outils de gestion"><button class="btn-refresh" onclick="loadSuppliersFromD1()" type="button">↻ Actualiser</button><button class="btn-reset" onclick="resetAll()" type="button">Réinitialiser</button></div>
+<div class="action-group" aria-label="Imports et mises à jour"><button class="btn-import" onclick="supplierImportInput.click()" type="button">⇧ Importer fournisseurs</button><button class="btn-update" id="globalArticleImportBtn" onclick="document.getElementById('globalArticleImportInput').click()" type="button">↻ Mettre à jour les articles</button></div>
+<div class="action-group export-group" aria-label="Exports"><button class="btn-export" onclick="exportSuppliersExcel()" type="button">⇩ Base fournisseurs</button><button class="btn-articles-zip" onclick="exportArticlesZip()" type="button">⇩ Base articles ZIP</button></div>
+<div class="action-group" aria-label="Ajout fournisseur"><button class="btn-add" disabled="" id="addSupplier" onclick="openSupplierEditor()" type="button">＋ Nouveau fournisseur</button></div>
 </div><input accept=".xlsx,.xls" hidden="" id="supplierImportInput" type="file"/><input accept=".xlsx,.xls" hidden="" id="globalArticleImportInput" type="file"/>
 </div><div class="stats" id="stats"></div></div>
 <div class="cards" id="cards"></div></div>
@@ -984,94 +977,42 @@ function articleObjectToRow(a){
 async function exportSuppliersExcel(){
  try{
   const data=await d1Get("/fournisseurs");
-  const h=["Fournisseur","Nom actuel","Statut","Type d'inactif","N° TVA / entreprise","Pays","Adresse","Nombre d'articles","Nombre de catégories","Nombre de lignes tarif","Note"];
-  const rows=data.fournisseurs.map(f=>[
-   f.nom||"",f.nom_actuel||"",f.statut||"",f.type_inactif||"",f.tva||"",f.pays||"",f.adresse||"",
-   String(f.nb_articles??0),String(f.nb_categories??0),String(f.nb_tarifs??0),f.note||""
-  ]);
-  downloadBlob(xlsxBlob(h,rows,"Fournisseurs"),"Base_fournisseurs_Braconnier.xlsx");
- }catch(err){
-  console.error(err);
-  alert("Export fournisseurs impossible depuis Cloudflare D1 : "+err.message);
- }
+  const suppliers=data.fournisseurs||[];
+  const emailFields=["email","email1","email2","email3","email4","email5","email6","email7"];
+  const h=["Code fournisseur","Fournisseur","Nom actuel","Statut","Type d'inactif","N° TVA / entreprise","Pays","Adresse","Code postal","Ville","Téléphone","Fax","Franco (€)","E-mail 1","E-mail 2","E-mail 3","E-mail 4","E-mail 5","E-mail 6","E-mail 7","E-mail 8","Nombre d'articles","Nombre de catégories","Nombre de lignes tarif","Source","Existence","Note"];
+  const rows=suppliers.map(f=>{
+   const x=supplierFromD1(f),c=supplierContact(x)||{},emails=Array.isArray(c.emails)?c.emails:[];
+   return [c.code||f.code||"",f.nom||"",f.nom_actuel||"",f.statut||"",f.type_inactif||"",f.tva||c.tva||"",f.pays||c.pays||"",c.adresse||f.adresse||"",c.cp||f.code_postal||"",c.ville||f.ville||"",c.tel||f.telephone||"",c.fax||f.fax||"",c.franco||f.franco||"",...Array.from({length:8},(_,i)=>emails[i]||f[emailFields[i]]||""),String(f.nb_articles??0),String(f.nb_categories??0),String(f.nb_tarifs??0),f.source||"",f.existence||"",f.note||""];
+  });
+  downloadBlob(xlsxBlob(h,rows,"Fournisseurs"),"Base_fournisseurs_complete_Braconnier.xlsx");
+ }catch(err){console.error(err);alert("Export fournisseurs impossible depuis Cloudflare D1 : "+err.message)}
 }
 
 async function exportCurrentArticlesExcel(){
  if(currentArticleSupplier<0)return;
  try{
-  const x=DATA[currentArticleSupplier];
-  const fid=Number(x._d1_id);
+  const x=DATA[currentArticleSupplier],fid=Number(x._d1_id);
   if(!Number.isInteger(fid)||fid<=0)throw new Error("Identifiant D1 du fournisseur introuvable");
   const data=await d1Get("/articles?fournisseur_id="+encodeURIComponent(fid));
   const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN"];
-  const rows=(data.articles||[]).map(articleObjectToRow);
-  downloadBlob(xlsxBlob(h,rows,"Articles"),"Articles_"+safeFileName(x.fournisseur_source)+".xlsx");
- }catch(err){
-  console.error(err);
-  alert("Export articles impossible depuis Cloudflare D1 : "+err.message);
- }
+  downloadBlob(xlsxBlob(h,(data.articles||[]).map(articleObjectToRow),"Articles"),"Articles_"+safeFileName(x.fournisseur_source)+".xlsx");
+ }catch(err){console.error(err);alert("Export articles impossible depuis Cloudflare D1 : "+err.message)}
 }
 
-async function exportEverythingZip(){
+async function exportArticlesZip(){
  try{
-  const files={};
-  const toBytes=async blob=>new Uint8Array(await blob.arrayBuffer());
-
-  const supplierData=await d1Get("/fournisseurs");
-  const suppliers=supplierData.fournisseurs||[];
-
-  const supplierHeaders=["Fournisseur","Nom actuel","Statut","Type d'inactif","N° TVA / entreprise","Pays","Adresse","Catégories","Nombre d'articles","Nombre de lignes tarif","Note"];
-  const supplierRows=[];
-
-  for(let pos=0;pos<suppliers.length;pos++){
-   const f=suppliers[pos];
-   let categories=[];
-   if(Number(f.nb_categories||0)>0){
-    const catData=await d1Get("/categories?fournisseur_id="+encodeURIComponent(f.id));
-    categories=(catData.categories||[]).map(c=>c.categorie||"").filter(Boolean);
-   }
-   supplierRows.push([
-    f.nom||"",f.nom_actuel||"",f.statut||"",f.type_inactif||"",f.tva||"",f.pays||"",f.adresse||"",
-    categories.join(" | "),String(f.nb_articles??0),String(f.nb_tarifs??0),f.note||""
-   ]);
+  const files={},toBytes=async blob=>new Uint8Array(await blob.arrayBuffer());
+  const suppliers=(await d1Get("/fournisseurs")).fournisseurs||[];
+  const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN"];
+  for(const f of suppliers){
+   if(Number(f.nb_articles||0)<=0)continue;
+   const rows=((await d1Get("/articles?fournisseur_id="+encodeURIComponent(f.id))).articles||[]).map(articleObjectToRow);
+   if(rows.length)files[`Articles_${safeFileName(f.nom||("Fournisseur_"+f.id))}.xlsx`]=await toBytes(xlsxBlob(h,rows,"Articles"));
   }
-
-  files["01_Fournisseurs/Base_fournisseurs_Braconnier.xlsx"]=
-   await toBytes(xlsxBlob(supplierHeaders,supplierRows,"Fournisseurs"));
-
-  const articleHeaders=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN"];
-
-  for(let pos=0;pos<suppliers.length;pos++){
-   const f=suppliers[pos];
-   const name=safeFileName(f.nom||("Fournisseur_"+f.id));
-
-   if(Number(f.nb_articles||0)>0){
-    const articleData=await d1Get("/articles?fournisseur_id="+encodeURIComponent(f.id));
-    const rows=(articleData.articles||[]).map(articleObjectToRow);
-    if(rows.length){
-     files[`02_Articles/Articles_${name}.xlsx`]=
-      await toBytes(xlsxBlob(articleHeaders,rows,"Articles"));
-    }
-   }
-
-   if(Number(f.nb_tarifs||0)>0){
-    const tariffData=await d1Get("/tarifs?fournisseur_id="+encodeURIComponent(f.id));
-    const rows=(tariffData.tarifs||[]).map(tariffObjectToRow);
-    if(rows.length){
-     files[`03_Tarifs/Tarif_${name}.xlsx`]=
-      await toBytes(xlsxBlob(TARIF_TECH_HEADERS,[TARIF_LABELS,...rows],"Tarif"));
-    }
-   }
-  }
-
-  const zip=xZip(files,"application/zip");
-  downloadBlob(zip,"Base_complete_Braconnier_D1.zip");
- }catch(err){
-  console.error(err);
-  alert("Export ZIP impossible depuis Cloudflare D1 : "+err.message);
- }
+  if(!Object.keys(files).length){alert("Aucun article à exporter.");return}
+  downloadBlob(xZip(files,"application/zip"),"Base_articles_Braconnier.zip");
+ }catch(err){console.error(err);alert("Export de la base articles impossible depuis Cloudflare D1 : "+err.message)}
 }
-
 
 const TARIF_TECH_HEADERS=["S_CLE3","S_CLE1","S_CLE2","S_CLE3","S_CONDIT_A","S_MODELE","S_POIDSBRU","S_DPA","S_PRIX_HT","ID_FOU","REF_FOU","S_MODELEN","S_CAT1","PRINCIPAL","PRIX","REMISE"];
 const TARIF_LABELS=["Ref fournisseur","Code braconnier","Code EAN","Ref fournisseur","Condit, Achat","Description FR","Poids brut","Prix d'achat HTVA","Prix de vente HTVA","ID Fournisseur","Ref fournisseur","Description Neerlandais","Code remise article","TOUJOURS 1 (permet de cocher la case qui dit que c'est le fournisseur principal)","PRIX BRUT d'achat","REMISE achat"];
