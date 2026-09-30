@@ -1527,7 +1527,18 @@ globalArticleImportInput.addEventListener("change",e=>{
    const entries=[...groups.entries()];
    const total=matched;
    const batchSize=50;
+   const failedBatches=[];
 
+   const addImportResult=result=>{
+    recus+=Number(result.recus||0);
+    ajoutes+=Number(result.ajoutes||0);
+    modifies+=Number(result.modifies||0);
+    inchanges+=Number(result.inchanges||0);
+    ignores+=Number(result.ignores||0);
+   };
+
+   // Premier passage : un lot qui reste en erreur après les tentatives
+   // est mémorisé, mais ne bloque plus les fournisseurs suivants.
    for(let gi=0;gi<entries.length;gi++){
     const [fournisseurId,group]=entries[gi];
 
@@ -1535,36 +1546,85 @@ globalArticleImportInput.addEventListener("change",e=>{
      const lot=group.articles.slice(pos,pos+batchSize);
      globalArticleImportBtn.textContent="Mise à jour… "+Math.min(done+lot.length,total)+" / "+total;
 
-     const result=await importArticleBatchWithRetry(
-      fournisseurId,
-      lot,
-      password,
-      group.name,
-      (attempt,maxAttempts,delay)=>{
-       globalArticleImportBtn.textContent=
-        "Connexion interrompue — nouvelle tentative "+attempt+"/"+maxAttempts+
-        " dans "+Math.round(delay/1000)+" s… "+done+" / "+total;
-      }
-     );
+     try{
+      const result=await importArticleBatchWithRetry(
+       fournisseurId,
+       lot,
+       password,
+       group.name,
+       (attempt,maxAttempts,delay)=>{
+        globalArticleImportBtn.textContent=
+         "Connexion interrompue — nouvelle tentative "+attempt+"/"+maxAttempts+
+         " dans "+Math.round(delay/1000)+" s… "+done+" / "+total;
+       }
+      );
+      addImportResult(result);
+     }catch(err){
+      console.warn("Lot article reporté :",group.name,pos,err);
+      failedBatches.push({
+       fournisseurId,
+       supplierName:group.name,
+       articles:lot,
+       start:pos,
+       error:String(err&&err.message||err)
+      });
+     }
 
-     recus+=Number(result.recus||0);
-     ajoutes+=Number(result.ajoutes||0);
-     modifies+=Number(result.modifies||0);
-     inchanges+=Number(result.inchanges||0);
-     ignores+=Number(result.ignores||0);
      done+=lot.length;
+    }
+   }
+
+   // Deuxième passage : on réessaie uniquement les lots qui ont échoué.
+   const finalFailures=[];
+   if(failedBatches.length){
+    for(let i=0;i<failedBatches.length;i++){
+     const failed=failedBatches[i];
+     globalArticleImportBtn.textContent=
+      "Nouvelle tentative des échecs… "+(i+1)+" / "+failedBatches.length+
+      " — "+failed.supplierName;
+
+     try{
+      const result=await importArticleBatchWithRetry(
+       failed.fournisseurId,
+       failed.articles,
+       password,
+       failed.supplierName,
+       (attempt,maxAttempts,delay)=>{
+        globalArticleImportBtn.textContent=
+         "Nouvelle tentative "+attempt+"/"+maxAttempts+
+         " dans "+Math.round(delay/1000)+" s… — "+failed.supplierName;
+       }
+      );
+      addImportResult(result);
+     }catch(err){
+      console.error("Lot article définitivement en échec :",failed.supplierName,failed.start,err);
+      finalFailures.push({...failed,error:String(err&&err.message||err)});
+     }
     }
    }
 
    await loadD1Data();
 
    let finalMessage=
-    "Mise à jour globale terminée.\n\n"+
+    (finalFailures.length?"Mise à jour terminée avec quelques échecs.":"Mise à jour globale terminée.")+"\n\n"+
     recus+" ligne(s) traitée(s)\n"+
     ajoutes+" article(s) ajouté(s)\n"+
     modifies+" article(s) modifié(s)\n"+
     inchanges+" article(s) inchangé(s)\n"+
     ignores+" ligne(s) ignorée(s)";
+
+   if(failedBatches.length){
+    finalMessage+="\n\n"+failedBatches.length+" lot(s) ont rencontré une erreur temporaire et ont été retentés à la fin.";
+   }
+
+   if(finalFailures.length){
+    const failedArticles=finalFailures.reduce((sum,x)=>sum+x.articles.length,0);
+    const failedNames=[...new Set(finalFailures.map(x=>x.supplierName))];
+    finalMessage+="\n\n⚠ "+failedArticles+" article(s) restent à réessayer chez "+
+     failedNames.length+" fournisseur(s) :\n"+failedNames.slice(0,12).join(", ");
+    if(failedNames.length>12)finalMessage+="…";
+    finalMessage+="\n\nTous les autres fournisseurs ont quand même été traités.";
+   }
 
    if(ignored){
     finalMessage+="\n\n"+ignored+" article(s) volontairement non importé(s), faute de correspondance fournisseur validée.";
