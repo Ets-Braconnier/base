@@ -66,8 +66,11 @@ function showArticle(a){$("productName").textContent=a.denomination||"Article";$
 function showChoices(rows){$("choiceList").innerHTML="";rows.forEach(a=>{const b=document.createElement("button");b.className="choice";const price=document.createElement("span");price.className="choice-price";price.textContent=euro(a.prix_vente_tvac);const strong=document.createElement("strong");strong.textContent=a.denomination||"Article";const small=document.createElement("small");small.textContent="N° article : "+(a.numero_article||"—")+" · Réf. article : "+(a.num_fournisseur||"—");b.append(price,strong,small);b.onclick=()=>showArticle(a);$("choiceList").appendChild(b)});views("choices")}
 async function lookup(raw){
  const q=clean(raw);if(!q)return;views("home");$("status").textContent="Recherche de l'article…";
- try{const r=await fetch(API+"/articles/recherche?q="+encodeURIComponent(q)+"&limit=100",{cache:"no-store"}),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)throw new Error();
- const rows=(j.articles||[]).map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
+ try{
+ const url=API+"/articles/recherche?q="+encodeURIComponent(q)+"&limit=100";
+ const load=async enseigne=>{try{const opt={cache:"no-store"};if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return [];return (j.articles||[]).map(a=>({...a,_enseigne:enseigne}))}catch{return []}};
+ const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
+ const rows=[...brac,...outilsud].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
  if(!rows.length){views("notfound");return}if(rows.length===1){showArticle(rows[0]);return}showChoices(rows)}
  catch(e){views("home");$("status").textContent="Connexion impossible. Réessayez."}
 }
