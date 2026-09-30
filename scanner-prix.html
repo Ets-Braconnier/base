@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Scanner de prix · Ets Braconnier</title>
+<style>
+*{box-sizing:border-box}
+:root{--orange:#f47b00;--navy:#29343d;--blue:#2563eb;--green:#16824b;--red:#c9362b;--ink:#222a31;--muted:#68727c;--line:#dde2e6;--bg:#f4f6f7}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+button,input{font:inherit}
+.wrap{max-width:980px;margin:auto;padding:14px}
+.unified-header{background:#29343d;color:#fff;border-radius:13px;padding:14px 16px;min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 3px 12px rgba(20,27,32,.08);position:relative;z-index:1000}
+.unified-brand{display:flex;align-items:center;gap:11px;min-width:0}.unified-logo{width:42px;height:42px;border-radius:9px;background:var(--orange);display:grid;place-items:center;font-weight:900;font-size:20px;flex:0 0 auto}.unified-brand h1{font-size:20px;margin:0}.unified-brand p{font-size:10px;color:#d4dce1;margin:4px 0 0}
+.unified-tools{display:flex;align-items:center;gap:7px}.unified-menu-wrap{position:relative}.unified-menu-btn,.unified-logout{height:36px;border:0;border-radius:8px;padding:0 13px;color:#fff;font-weight:800;font-size:10px;cursor:pointer}.unified-menu-btn{background:var(--orange)}.unified-logout{background:#46515a}
+.unified-menu{display:none;position:absolute;right:0;top:43px;width:220px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 10px 28px rgba(0,0,0,.18)}.unified-menu.open{display:block}.unified-menu a{display:block;padding:10px 11px;border-radius:7px;color:var(--ink);text-decoration:none;font-size:11px;font-weight:800}.unified-menu a:hover,.unified-menu a.active{background:#fff1e3;color:#b95700}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+.intro{text-align:center;padding:18px 14px 8px}.intro h2{margin:0;font-size:23px}.intro p{margin:7px 0 0;color:var(--muted);font-size:12px}
+.searchbox{display:grid;grid-template-columns:1fr auto;gap:8px;max-width:760px;margin:14px auto 0}.searchbox input{height:50px;border:1px solid #cbd3d9;border-radius:10px;padding:0 14px;font-size:16px;outline:none}.searchbox input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(244,123,0,.12)}.scanbtn{height:50px;border:0;border-radius:10px;background:var(--blue);color:#fff;padding:0 18px;font-weight:900;cursor:pointer}
+.hint{text-align:center;font-size:10px;color:var(--muted);margin-top:9px}
+.state{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+.card{border:1px solid var(--line);border-radius:14px;overflow:hidden;max-width:760px;margin:0 auto;background:#fff;box-shadow:0 5px 20px rgba(25,34,40,.07)}
+.price{background:#eef8f2;padding:22px 16px;text-align:center;border-bottom:1px solid #d7eadf}.price small{display:block;font-size:11px;font-weight:900;color:#49715a;text-transform:uppercase;letter-spacing:.08em}.price strong{display:block;font-size:46px;line-height:1.05;color:var(--green);margin-top:5px}
+.info{padding:18px}.designation{font-size:21px;font-weight:900;line-height:1.25}.supplier{margin-top:5px;color:var(--orange);font-size:13px;font-weight:900}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.meta div{background:#f6f8f9;border-radius:9px;padding:10px;min-width:0}.meta span{display:block;font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase}.meta b{display:block;font-size:12px;margin-top:4px;overflow-wrap:anywhere}
+.next{width:100%;height:50px;border:0;border-radius:10px;background:var(--orange);color:#fff;font-size:14px;font-weight:900;margin-top:14px;cursor:pointer}
+.multi{max-width:760px;margin:auto;display:grid;gap:8px}.multi-title{font-size:12px;font-weight:900;margin-bottom:4px}.choice{border:1px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;background:#fff}.choice:hover{border-color:var(--orange);background:#fff9f3}.choice strong{font-size:13px}.choice .sub{font-size:10px;color:var(--muted);margin-top:5px}
+.notfound{text-align:center;max-width:760px;margin:auto;border:1px solid #f0c9c6;background:#fff6f5;border-radius:12px;padding:24px}.notfound strong{display:block;color:var(--red);font-size:20px}.notfound span{display:block;color:var(--muted);font-size:11px;margin-top:7px}
+#scannerModal{display:none;position:fixed;inset:0;background:#101417;z-index:10000;color:#fff}.scanner-shell{height:100%;display:flex;flex-direction:column}.scanner-top{display:flex;justify-content:space-between;align-items:center;padding:12px}.scanner-top button{border:0;border-radius:7px;background:#fff;color:#111;padding:9px 12px;font-weight:800}.video-wrap{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}.video-wrap video{width:100%;height:100%;object-fit:cover}.scan-frame{position:absolute;width:min(84vw,500px);height:180px;border:3px solid var(--orange);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.38)}.scanner-msg{padding:13px;text-align:center;font-size:12px}
+.toast{position:fixed;right:14px;bottom:14px;background:#182027;color:#fff;padding:11px 14px;border-radius:8px;font-size:11px;opacity:0;pointer-events:none;transition:.2s;z-index:12000}.toast.show{opacity:1}
+@media(max-width:700px){.wrap{padding:8px}.unified-header{border-radius:9px;padding:11px 12px;gap:9px;flex-wrap:wrap}.unified-brand{min-width:calc(100% - 120px)}.unified-brand h1{font-size:17px}.unified-brand p{display:none}.unified-logout{width:36px;padding:0;font-size:0}.unified-logout:before{content:'↪';font-size:17px}.unified-menu{position:fixed;left:10px;right:10px;top:70px;width:auto;max-height:calc(100vh - 85px);overflow:auto}.panel{padding:12px}.intro{padding-top:12px}.intro h2{font-size:20px}.searchbox{grid-template-columns:1fr auto}.scanbtn{padding:0 14px;font-size:0}.scanbtn:after{content:"📷";font-size:21px}.price strong{font-size:42px}.designation{font-size:18px}.meta{grid-template-columns:1fr 1fr}.meta div:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="unified-header">
+ <div class="unified-brand"><div class="unified-logo">B</div><div><h1>Scanner de prix</h1><p>Ets Braconnier · consultation rapide des prix articles</p></div></div>
+ <div class="unified-tools">
+  <div class="unified-menu-wrap">
+   <button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button">☰ Menu</button>
+   <nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu">
+    <a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a class="active" href="scanner-prix.html">Scanner de prix</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a>
+   </nav>
+  </div>
+  <button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button>
+ </div>
+</header>
+
+<section class="panel">
+ <div class="intro"><h2>Quel est le prix de cet article ?</h2><p>Scannez le code-barres ou saisissez un EAN, un n° article Braconnier ou une référence fournisseur.</p></div>
+ <div class="searchbox"><input id="searchInput" autocomplete="off" inputmode="search" type="search" placeholder="EAN, n° article ou réf. fournisseur…"><button class="scanbtn" id="scanBtn" type="button">📷 Scanner</button></div>
+ <div class="hint">Compatible également avec un lecteur code-barres USB/Bluetooth.</div>
+</section>
+
+<section class="panel" id="resultPanel"><div class="state">Prêt à scanner un article.</div></section>
+</div>
+
+<div id="scannerModal"><div class="scanner-shell"><div class="scanner-top"><b>Scanner un article</b><button id="closeScanner">Fermer ✕</button></div><div class="video-wrap"><video autoplay id="scannerVideo" muted playsinline></video><div class="scan-frame"></div></div><div class="scanner-msg" id="scannerMsg">Placez le code-barres dans le cadre.</div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE="https://braconnier-api.sebastien-025.workers.dev",TOKEN_KEY="braconnier_portal_token_v3",LOGOUT_KEY="braconnier_portal_logout";
+const $=id=>document.getElementById(id);
+let scannerStream=null,scannerLoop=null,lastQuery="",searchTimer=null;
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function cleanScanValue(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
+function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
+function portalLogout(){sessionStorage.removeItem(TOKEN_KEY);try{localStorage.setItem(LOGOUT_KEY,Date.now()+":"+Math.random())}catch{}location.replace("index.html")}
+function toast(t){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),1800)}
+function money(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):null}
+async function apiJson(path){const r=await fetch(API_BASE+path,{cache:"no-store"}),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)throw new Error(j.erreur||("HTTP "+r.status));return j}
+function exactScore(a,q){const n=norm(q);if(!n)return 0;if(norm(a.ean)===n)return 300;if(norm(a.numero_article)===n)return 290;if(norm(a.num_fournisseur)===n)return 280;return 0}
+function renderArticle(a){
+ const tvac=money(a.prix_vente_tvac);
+ $("resultPanel").innerHTML=`<div class="card"><div class="price"><small>Prix de vente TVAC</small><strong>${esc(tvac||"Prix indisponible")}</strong></div><div class="info"><div class="designation">${esc(a.denomination||"Article sans dénomination")}</div><div class="supplier">${esc(a.fournisseur||a.nom_fournisseur||"")}</div><div class="meta"><div><span>N° article Braconnier</span><b>${esc(a.numero_article||"—")}</b></div><div><span>Réf. fournisseur</span><b>${esc(a.num_fournisseur||"—")}</b></div><div><span>EAN</span><b>${esc(a.ean||"—")}</b></div></div><button class="next" id="nextBtn" type="button">📷 Scanner suivant</button></div></div>`;
+ $("nextBtn").onclick=()=>{resetSearch();startScanner()};
+}
+function renderChoices(list,q){
+ $("resultPanel").innerHTML=`<div class="multi"><div class="multi-title">${list.length} articles correspondent à « ${esc(q)} ». Choisissez l'article :</div>${list.map((a,i)=>`<div class="choice" data-choice="${i}"><strong>${esc(a.denomination||a.numero_article||"Article")}</strong><div class="sub">${esc(a.fournisseur||"")} · Article ${esc(a.numero_article||"—")} · Réf. ${esc(a.num_fournisseur||"—")} · EAN ${esc(a.ean||"—")} · ${esc(money(a.prix_vente_tvac)||"prix indisponible")}</div></div>`).join("")}</div>`;
+ $("resultPanel").querySelectorAll("[data-choice]").forEach(el=>el.onclick=()=>renderArticle(list[Number(el.dataset.choice)]));
+}
+function renderNotFound(q){$("resultPanel").innerHTML=`<div class="notfound"><strong>Article introuvable</strong><span>Aucun article trouvé pour « ${esc(q)} ».</span><button class="next" id="retryBtn" type="button">📷 Scanner un autre article</button></div>`;$("retryBtn").onclick=()=>{resetSearch();startScanner()}}
+async function lookup(raw,fromScan=false){
+ const q=cleanScanValue(raw);if(!q){$("resultPanel").innerHTML='<div class="state">Prêt à scanner un article.</div>';return}
+ lastQuery=q;$("resultPanel").innerHTML='<div class="state">Recherche de l’article…</div>';
+ try{
+  const j=await apiJson("/articles/recherche?q="+encodeURIComponent(q)+"&limit=50");
+  if(lastQuery!==q)return;
+  const rows=j.articles||[];
+  if(!rows.length){renderNotFound(q);return}
+  const exact=rows.map(a=>({a,s:exactScore(a,q)})).filter(x=>x.s>0).sort((x,y)=>y.s-x.s);
+  if(exact.length===1){renderArticle(exact[0].a);return}
+  if(exact.length>1){renderChoices(exact.map(x=>x.a),q);return}
+  if(rows.length===1){renderArticle(rows[0]);return}
+  renderChoices(rows,q);
+ }catch(e){$("resultPanel").innerHTML=`<div class="notfound"><strong>Erreur de connexion</strong><span>${esc(e.message)}</span></div>`}
+}
+function resetSearch(){$("searchInput").value="";lastQuery="";$("resultPanel").innerHTML='<div class="state">Prêt à scanner un article.</div>'}
+async function startScanner(){
+ if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible.");$("searchInput").focus();return}
+ $("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";
+ try{
+  scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+  $("scannerVideo").srcObject=scannerStream;
+  if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge. Utilisez un lecteur code-barres ou la saisie manuelle.";return}
+  const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]);
+  const wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"].filter(x=>!supported.length||supported.includes(x));
+  const detector=new BarcodeDetector({formats:wanted.length?wanted:undefined});
+  $("scannerMsg").textContent="EAN, n° article ou référence fournisseur : placez le code dans le cadre.";
+  const detect=async()=>{if(!scannerStream)return;try{const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw){$("searchInput").value=raw;stopScanner();lookup(raw,true);return}}}catch{}scannerLoop=requestAnimationFrame(detect)};
+  scannerLoop=requestAnimationFrame(detect);
+ }catch(e){$("scannerMsg").textContent="Impossible d'ouvrir la caméra : "+e.message}
+}
+function stopScanner(){if(scannerLoop)cancelAnimationFrame(scannerLoop);scannerLoop=null;if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;$("scannerVideo").srcObject=null;$("scannerModal").style.display="none"}
+$("scanBtn").onclick=startScanner;$("closeScanner").onclick=stopScanner;
+$("searchInput").oninput=()=>{clearTimeout(searchTimer);const q=$("searchInput").value;searchTimer=setTimeout(()=>lookup(q,false),280)};
+$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(searchTimer);lookup($("searchInput").value,false)}};
+(function(){const b=$("unifiedMenuBtn"),m=$("unifiedMenu");function close(){m.classList.remove("open");b.setAttribute("aria-expanded","false")}b.onclick=e=>{e.stopPropagation();const o=m.classList.toggle("open");b.setAttribute("aria-expanded",o?"true":"false")};m.onclick=e=>e.stopPropagation();document.addEventListener("click",close);document.addEventListener("keydown",e=>{if(e.key==="Escape")close()})})();
+</script>
+</body>
+</html>
