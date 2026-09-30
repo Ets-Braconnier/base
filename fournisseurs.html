@@ -1333,6 +1333,44 @@ function chooseUnknownSupplierMappings(unknown){
  });
 }
 
+
+async function importArticleBatchWithRetry(fournisseurId,articles,password,supplierName,onRetry){
+ const maxAttempts=5;
+ for(let attempt=1;attempt<=maxAttempts;attempt++){
+  try{
+   const response=await fetch(API_BASE+"/admin/articles/import",{
+    method:"POST",
+    headers:{
+     "Content-Type":"application/json",
+     "X-Admin-Password":password
+    },
+    body:JSON.stringify({fournisseur_id:Number(fournisseurId),articles})
+   });
+
+   const result=await response.json().catch(()=>({}));
+   if(response.ok&&result.ok)return result;
+
+   const message=result.erreur||("Erreur HTTP "+response.status);
+   const retryable=response.status===408||response.status===429||response.status>=500||
+    /network|connection|lost|timeout|temporar|d1_error/i.test(message);
+
+   if(!retryable||attempt===maxAttempts)throw new Error(supplierName+" : "+message);
+  }catch(err){
+   const message=String(err&&err.message||err);
+   const retryable=/network|fetch|connection|lost|timeout|temporar|d1_error|http 5\d\d|http 429|http 408/i.test(message);
+   if(!retryable||attempt===maxAttempts){
+    if(message.startsWith(supplierName+" :"))throw err;
+    throw new Error(supplierName+" : "+message);
+   }
+  }
+
+  const delay=Math.min(15000,1500*Math.pow(2,attempt-1));
+  if(typeof onRetry==="function")onRetry(attempt,maxAttempts,delay);
+  await new Promise(resolve=>setTimeout(resolve,delay));
+ }
+ throw new Error(supplierName+" : échec de l'import après plusieurs tentatives.");
+}
+
 globalArticleImportInput.addEventListener("change",e=>{
  const file=e.target.files[0];
  if(!file)return;
@@ -1488,7 +1526,7 @@ globalArticleImportInput.addEventListener("change",e=>{
    let done=0;
    const entries=[...groups.entries()];
    const total=matched;
-   const batchSize=100;
+   const batchSize=50;
 
    for(let gi=0;gi<entries.length;gi++){
     const [fournisseurId,group]=entries[gi];
@@ -1497,19 +1535,17 @@ globalArticleImportInput.addEventListener("change",e=>{
      const lot=group.articles.slice(pos,pos+batchSize);
      globalArticleImportBtn.textContent="Mise à jour… "+Math.min(done+lot.length,total)+" / "+total;
 
-     const response=await fetch(API_BASE+"/admin/articles/import",{
-      method:"POST",
-      headers:{
-       "Content-Type":"application/json",
-       "X-Admin-Password":password
-      },
-      body:JSON.stringify({fournisseur_id:Number(fournisseurId),articles:lot})
-     });
-
-     const result=await response.json().catch(()=>({}));
-     if(!response.ok||!result.ok){
-      throw new Error(group.name+" : "+(result.erreur||("Erreur HTTP "+response.status)));
-     }
+     const result=await importArticleBatchWithRetry(
+      fournisseurId,
+      lot,
+      password,
+      group.name,
+      (attempt,maxAttempts,delay)=>{
+       globalArticleImportBtn.textContent=
+        "Connexion interrompue — nouvelle tentative "+attempt+"/"+maxAttempts+
+        " dans "+Math.round(delay/1000)+" s… "+done+" / "+total;
+      }
+     );
 
      recus+=Number(result.recus||0);
      ajoutes+=Number(result.ajoutes||0);
