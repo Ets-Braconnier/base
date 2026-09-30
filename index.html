@@ -18,7 +18,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 @media(max-width:560px){.shell{width:100%;margin:0;border-radius:0;border-left:0;border-right:0;min-height:100vh}.login-wrap{padding:34px 18px}.choose,.dashboard{padding:20px}.apps{grid-template-columns:1fr}.portal-head{padding:14px 16px}.dash-title{align-items:flex-start}.dash-brand img{width:150px}.brand-login{gap:12px}}
 </style>
 <script>
-(()=>{const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";const home=new URL("index.html",window.location.href).href;window.portalLogout=function(){sessionStorage.removeItem(tokenKey);try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};window.addEventListener("storage",e=>{if(e.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home)})})();
+(()=>{const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";const home=new URL("index.html",window.location.href).href;window.portalLogout=function(){sessionStorage.removeItem(tokenKey);sessionStorage.removeItem("braconnier_api_access_password_v1");try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};window.addEventListener("storage",e=>{if(e.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home)})})();
 </script>
 </head>
 <body>
@@ -57,14 +57,14 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
  </div></div>
 </section></div>
 <script>
-const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev",TOKEN_KEY="braconnier_portal_token_v3";
+const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev",TOKEN_KEY="braconnier_portal_token_v3",API_ACCESS_PASSWORD_KEY="braconnier_api_access_password_v1";
 const loginWrap=document.getElementById("loginWrap"),portal=document.getElementById("portal"),form=document.getElementById("loginForm"),password=document.getElementById("password"),submit=document.getElementById("submit"),msg=document.getElementById("msg"),choose=document.getElementById("choose"),brac=document.getElementById("bracDashboard"),outil=document.getElementById("outilDashboard"),changeBrand=document.getElementById("changeBrand");
 function showPortal(){loginWrap.style.display="none";portal.classList.add("open");showChoose()}
 function showChoose(){choose.style.display="block";brac.classList.remove("open");outil.classList.remove("open");changeBrand.style.display="none"}
 function openBrand(name){choose.style.display="none";(name==="braconnier"?brac:outil).classList.add("open");changeBrand.style.display=""}
-async function validateExisting(){const token=sessionStorage.getItem(TOKEN_KEY);if(!token)return;try{const r=await fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.ok)showPortal();else sessionStorage.removeItem(TOKEN_KEY)}catch(e){}}
+async function validateExisting(){const token=sessionStorage.getItem(TOKEN_KEY);if(!token)return;if(!sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)){sessionStorage.removeItem(TOKEN_KEY);return;}try{const r=await fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.ok)showPortal();else{sessionStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(API_ACCESS_PASSWORD_KEY)}}catch(e){}}
 validateExisting();
-form.addEventListener("submit",async e=>{e.preventDefault();if(!password.value)return;submit.disabled=true;submit.textContent="Vérification…";msg.textContent="";try{const r=await fetch(AUTH_API+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:password.value})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.token)throw new Error(j.error||"Mot de passe incorrect.");sessionStorage.setItem(TOKEN_KEY,j.token);password.value="";showPortal()}catch(err){msg.textContent=err.message||"Accès refusé.";password.select()}finally{submit.disabled=false;submit.textContent="Se connecter"}});
+form.addEventListener("submit",async e=>{e.preventDefault();if(!password.value)return;submit.disabled=true;submit.textContent="Vérification…";msg.textContent="";try{const r=await fetch(AUTH_API+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:password.value})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.token)throw new Error(j.error||"Mot de passe incorrect.");sessionStorage.setItem(TOKEN_KEY,j.token);sessionStorage.setItem(API_ACCESS_PASSWORD_KEY,password.value);password.value="";showPortal()}catch(err){msg.textContent=err.message||"Accès refusé.";password.select()}finally{submit.disabled=false;submit.textContent="Se connecter"}});
 document.querySelectorAll("[data-brand]").forEach(el=>el.addEventListener("click",()=>openBrand(el.dataset.brand)));document.querySelectorAll(".back").forEach(el=>el.addEventListener("click",showChoose));changeBrand.addEventListener("click",showChoose);document.getElementById("logout").addEventListener("click",()=>portalLogout());
 </script>
 </body></html>

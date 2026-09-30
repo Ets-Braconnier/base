@@ -237,10 +237,11 @@ const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 // Il est demandé à l'utilisateur et conservé uniquement pour cet onglet/session.
 const API_ACCESS_PASSWORD_KEY="braconnier_api_access_password_v1";
 function apiAccessPassword(){
-  let p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
+  const p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
   if(!p){
-    p=window.prompt("Mot de passe administrateur pour accéder aux données internes :")||"";
-    if(p)sessionStorage.setItem(API_ACCESS_PASSWORD_KEY,p);
+    sessionStorage.removeItem("braconnier_portal_token_v3");
+    window.location.replace("index.html");
+    return "";
   }
   return p;
 }
