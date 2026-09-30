@@ -20,6 +20,11 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 .scan-card{padding:22px}.scan-button{width:100%;min-height:195px;border:0;border-radius:18px;background:linear-gradient(115deg,#f47b00 0%,#f47b00 22%,#ee7410 34%,#d65d32 48%,#a94d5e 60%,#675080 73%,#284f9e 100%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;cursor:pointer;box-shadow:0 10px 28px rgba(40,79,158,.20);position:relative;overflow:hidden}
 .scan-button:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--orange)}
 .scan-button svg{width:62px;height:62px}.scan-button strong{font-size:25px}.scan-button span{font-size:12px;opacity:.9}.status{margin-top:15px;text-align:center;color:var(--muted);font-size:11px;min-height:16px}
+.store-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.store-badge{display:inline-flex;align-items:center;border-radius:999px;padding:6px 11px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.store-badge.braconnier{background:#fff1e3;color:#b75b00;border:1px solid #ffd2a3}
+.store-badge.outilsud{background:#eef2ff;color:var(--blue2);border:1px solid #cdd7ff}
+.choice-stores{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.choice-stores .store-badge{padding:4px 8px;font-size:9px}
 .result,.choices,.notfound{display:none}.result.show,.choices.show,.notfound.show{display:block}.product{overflow:hidden}.product-top{padding:26px 22px 18px;text-align:center}.product-name{font-size:clamp(20px,4vw,29px);font-weight:900;line-height:1.22}
 .pricebox{margin:0 18px;background:#fff6ec;border:1px solid #ffe0bd;border-radius:18px;padding:20px;text-align:center}.pricebox span{display:block;color:#a95600;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.pricebox strong{display:block;color:var(--orange);font-size:clamp(44px,10vw,70px);line-height:1;margin-top:7px}
 .refs{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:18px}.ref{background:#f6f7f8;border-radius:13px;padding:13px 14px;text-align:left;min-width:0}.ref span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;font-weight:900}.ref b{display:block;font-size:13px;margin-top:5px;overflow-wrap:anywhere}
@@ -45,7 +50,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
   <h1>Scannez votre article</h1><p class="lead">Présentez le code-barres de l'article devant la caméra.</p>
   <div class="scan-card"><button class="scan-button" id="startScan" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2"/><path d="M7 9v6M10 8v8M13 9v6M16 8v8"/></svg><strong>Scanner un article</strong><span>EAN · N° article magasin · Référence article fournisseur</span></button><div class="status" id="status">Appuyez pour démarrer le scanner.</div></div>
  </div>
- <section class="result" id="resultView"><article class="product"><div class="product-top"><div class="product-name" id="productName"></div></div><div class="pricebox"><span>Prix TVAC</span><strong id="productPrice"></strong></div><div class="refs"><div class="ref"><span>N° article magasin</span><b id="productArticle"></b></div><div class="ref"><span>Référence article fournisseur</span><b id="productSupplierRef"></b></div></div><button class="again" id="scanAgain">Scanner un autre article</button></article></section>
+ <section class="result" id="resultView"><article class="product"><div class="product-top"><div class="store-badges" id="productStores"></div><div class="product-name" id="productName"></div></div><div class="pricebox"><span>Prix TVAC</span><strong id="productPrice"></strong></div><div class="refs"><div class="ref"><span>N° article magasin</span><b id="productArticle"></b></div><div class="ref"><span>Référence article fournisseur</span><b id="productSupplierRef"></b></div></div><button class="again" id="scanAgain">Scanner un autre article</button></article></section>
  <section class="choices" id="choicesView"><h2>Plusieurs articles trouvés</h2><p>Choisissez l'article correspondant.</p><div id="choiceList"></div><button class="again" id="choicesAgain" style="margin-top:18px">Scanner un autre article</button></section>
  <section class="notfound" id="notFound"><h2>Article introuvable</h2><p>Ce code n'a pas été trouvé dans notre base articles.</p><button class="retry" id="retry">Scanner un autre article</button></section>
 </main></div>
@@ -62,8 +67,40 @@ function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
 function matchType(a,q){const n=norm(q);if(norm(a.ean)===n)return 3;if(norm(a.numero_article)===n)return 2;if(norm(a.num_fournisseur)===n)return 1;return 0}
 function views(name){$("homeView").style.display=name==="home"?"block":"none";$("resultView").classList.toggle("show",name==="result");$("choicesView").classList.toggle("show",name==="choices");$("notFound").classList.toggle("show",name==="notfound")}
-function showArticle(a){$("productName").textContent=a.denomination||"Article";$("productPrice").textContent=euro(a.prix_vente_tvac);$("productArticle").textContent=a.numero_article||"—";$("productSupplierRef").textContent=a.num_fournisseur||"—";views("result")}
-function showChoices(rows){$("choiceList").innerHTML="";rows.forEach(a=>{const b=document.createElement("button");b.className="choice";const price=document.createElement("span");price.className="choice-price";price.textContent=euro(a.prix_vente_tvac);const strong=document.createElement("strong");strong.textContent=a.denomination||"Article";const small=document.createElement("small");small.textContent="N° article : "+(a.numero_article||"—")+" · Réf. article : "+(a.num_fournisseur||"—");b.append(price,strong,small);b.onclick=()=>showArticle(a);$("choiceList").appendChild(b)});views("choices")}
+function storeLabel(e){return e==="outilsud"?"Outilsud":"Braconnier"}
+function storeBadges(stores){return [...new Set(stores)].map(e=>'<span class="store-badge '+e+'">'+storeLabel(e)+'</span>').join("")}
+function articleKey(a){return [norm(a.ean),norm(a.numero_article),norm(a.num_fournisseur),norm(a.denomination)].join("|")}
+function samePrice(a,b){const x=Number(a.prix_vente_tvac),y=Number(b.prix_vente_tvac);return Number.isFinite(x)&&Number.isFinite(y)&&Math.abs(x-y)<0.005}
+function groupSameProducts(rows){
+ const groups=[];
+ rows.forEach(a=>{
+   const key=articleKey(a);
+   let g=groups.find(x=>x.key===key && samePrice(x.article,a));
+   if(!g){g={key,article:a,stores:[]};groups.push(g)}
+   g.stores.push(a._enseigne);
+ });
+ return groups;
+}
+function showArticle(a,stores=[a._enseigne]){
+ $("productStores").innerHTML=storeBadges(stores);
+ $("productName").textContent=a.denomination||"Article";
+ $("productPrice").textContent=euro(a.prix_vente_tvac);
+ $("productArticle").textContent=a.numero_article||"—";
+ $("productSupplierRef").textContent=a.num_fournisseur||"—";
+ views("result")
+}
+function showChoices(groups){
+ $("choiceList").innerHTML="";
+ groups.forEach(g=>{
+   const a=g.article,b=document.createElement("button");b.className="choice";
+   const price=document.createElement("span");price.className="choice-price";price.textContent=euro(a.prix_vente_tvac);
+   const strong=document.createElement("strong");strong.textContent=a.denomination||"Article";
+   const small=document.createElement("small");small.textContent="N° article : "+(a.numero_article||"—")+" · Réf. article : "+(a.num_fournisseur||"—");
+   const badges=document.createElement("div");badges.className="choice-stores";badges.innerHTML=storeBadges(g.stores);
+   b.append(price,strong,small,badges);b.onclick=()=>showArticle(a,g.stores);$("choiceList").appendChild(b)
+ });
+ views("choices")
+}
 async function lookup(raw){
  const q=clean(raw);if(!q)return;views("home");$("status").textContent="Recherche de l'article…";
  try{
@@ -71,7 +108,10 @@ async function lookup(raw){
  const load=async enseigne=>{try{const opt={cache:"no-store"};if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return [];return (j.articles||[]).map(a=>({...a,_enseigne:enseigne}))}catch{return []}};
  const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
  const rows=[...brac,...outilsud].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
- if(!rows.length){views("notfound");return}if(rows.length===1){showArticle(rows[0]);return}showChoices(rows)}
+ if(!rows.length){views("notfound");return}
+ const groups=groupSameProducts(rows);
+ if(groups.length===1){showArticle(groups[0].article,groups[0].stores);return}
+ showChoices(groups)}
  catch(e){views("home");$("status").textContent="Connexion impossible. Réessayez."}
 }
 async function startScanner(){
