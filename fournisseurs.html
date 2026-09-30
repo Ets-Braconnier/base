@@ -1,18 +1,5 @@
 <!DOCTYPE html>
 <html lang="fr"><head>
-<script id="portal-access-guard">
-(function(){
-  const TOKEN_KEY="braconnier_portal_token_v3";
-  const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev";
-  document.documentElement.style.visibility="hidden";
-  const token=sessionStorage.getItem(TOKEN_KEY);
-  if(!token){ location.replace(new URL("/base/index.html",location.origin).href); return; }
-  fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"})
-    .then(r=>{if(!r.ok)throw new Error("unauthorized"); document.documentElement.style.visibility="";})
-    .catch(()=>{sessionStorage.removeItem(TOKEN_KEY);location.replace(new URL("/base/index.html",location.origin).href);});
-})();
-</script>
-
 <script>
 const AUTH_API_PORTAL="https://braconnier-auth.sebastien-025.workers.dev";
 const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
@@ -2063,6 +2050,31 @@ function articleCellValue(r,c){if(c>=10&&c<=12){const v=Number(r[c]??0);return (
 function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactRows=currentArticleRows.filter(r=>[0,1,9].some(c=>n(r[c]||"")===q));rows=exactRows.length?exactRows:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]??"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]??"").localeCompare(String(b[articleSortCol]??""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(articleCellValue(r,c))}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="12">Aucun article trouvé.</td></tr>`}
 articleSearch.addEventListener("input",()=>{const clean=articleSearch.value.replace(/#/g,"");if(clean!==articleSearch.value)articleSearch.value=clean;renderArticles()});document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
+// Protection API : le mot de passe n'est jamais inscrit dans le fichier.
+// Il est demandé à l'utilisateur et conservé uniquement pour cet onglet/session.
+const API_ACCESS_PASSWORD_KEY="braconnier_api_access_password_v1";
+function apiAccessPassword(){
+  let p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
+  if(!p){
+    p=window.prompt("Mot de passe administrateur pour accéder aux données internes :")||"";
+    if(p)sessionStorage.setItem(API_ACCESS_PASSWORD_KEY,p);
+  }
+  return p;
+}
+const nativeFetchForPrivateApi=window.fetch.bind(window);
+window.fetch=function(input,init={}){
+  const target=typeof input==="string"?input:(input&&input.url)||"";
+  if(target.startsWith(API_BASE)){
+    const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
+    if(!headers.has("X-Admin-Password")){
+      const p=apiAccessPassword();
+      if(p)headers.set("X-Admin-Password",p);
+    }
+    init={...init,headers};
+  }
+  return nativeFetchForPrivateApi(input,init);
+};
+
 let API_CONNECTED=false;
 function rebuildProductSearchUnits(){PRODUCT_SEARCH_UNITS=DATA.map((x,ix)=>{const units=[];for(const c of (x.categories||[]))if(c)units.push(c);for(const r of (ARTICLES[String(ix)]||[])){const u=ARTICLE_SEARCH_COLS.map(c=>r[c]||"").join(" ");if(u.trim())units.push(u)}return units})}
 let supplierLoadPromise=null,dataGeneration=0;

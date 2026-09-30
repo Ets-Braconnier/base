@@ -104,7 +104,7 @@ function showChoices(groups){
 async function lookup(raw){
  const q=clean(raw);if(!q)return;views("home");$("status").textContent="Recherche de l'article…";
  try{
- const url=API+"/articles/recherche?q="+encodeURIComponent(q)+"&limit=100";
+ const url=API+"/scanner/recherche?q="+encodeURIComponent(q)+"&limit=100";
  const load=async enseigne=>{try{const opt={cache:"no-store"};if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return [];return (j.articles||[]).map(a=>({...a,_enseigne:enseigne}))}catch{return []}};
  const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
  const rows=[...brac,...outilsud].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
