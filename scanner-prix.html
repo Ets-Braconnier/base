@@ -34,7 +34,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 #scanner{display:none;position:fixed;inset:0;background:#090b0d;z-index:1000;color:#fff}#scanner.open{display:flex;flex-direction:column}
 .scan-head{padding:12px 16px;background:#fff;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;border-bottom:4px solid transparent;border-image:linear-gradient(90deg,var(--orange) 0 50%,var(--blue2) 50% 100%) 1}.scan-logo{height:55px;display:flex;align-items:center;justify-content:center}.scan-logo.brac{width:min(190px,31vw)}.scan-logo.outil{width:min(235px,36vw)}.scan-logo img{max-width:100%;max-height:100%;object-fit:contain}.close{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:#eef1f4;color:#15191c;border-radius:10px;width:40px;height:40px;font-weight:900;font-size:0}.close:after{content:"✕";font-size:17px}
 .camera{position:relative;flex:1;min-height:0;overflow:hidden;background:#000}.camera video{width:100%;height:100%;object-fit:cover}.target{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(84vw,560px);height:190px;border-radius:18px;border:3px solid var(--orange);box-shadow:0 0 0 9999px rgba(0,0,0,.46)}.target:after{content:"";position:absolute;left:0;right:0;top:50%;height:3px;background:var(--blue2)}
-.scan-help{background:#0d1013;text-align:center;padding:16px 18px 22px;font-size:13px}.scan-help strong{display:block;font-size:16px;margin-bottom:4px}
+.scan-help{background:#0d1013;text-align:center;padding:16px 18px 22px;font-size:13px}.scan-help strong{display:block;font-size:16px;margin-bottom:4px}.scan-loading{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#090b0d;color:#fff;text-align:center;padding:30px}.scan-loading.show{display:flex}.scan-loading .spinner{width:46px;height:46px;border:4px solid rgba(255,255,255,.22);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}.scan-loading strong{font-size:20px}.scan-loading span{font-size:13px;color:#cfd6dc}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:560px){.brandbar{min-height:92px;padding:12px;gap:18px}.logo-box{height:58px}.logo-box.brac{width:42vw}.logo-box.outil{width:46vw}.main{padding:20px 12px 24px}.scan-card{padding:12px}.scan-button{min-height:225px}.refs{grid-template-columns:1fr}.scan-head{gap:12px;justify-content:flex-start;padding-right:58px}.scan-logo{height:48px}.scan-logo.brac{width:34vw}.scan-logo.outil{width:39vw}}
 </style>
 </head>
@@ -57,7 +57,8 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 <section id="scanner">
  <div class="scan-head"><div class="scan-logo brac"><img src="logo-braconnier.png" alt="Braconnier"></div><div class="scan-logo outil"><img src="logo-outilsud.png" alt="Outilsud"></div><button class="close" id="closeScan">Fermer</button></div>
  <div class="camera"><video id="video" autoplay muted playsinline></video><div class="target"></div></div>
- <div class="scan-help"><strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur</div>
+ <div class="scan-help" id="scanHelp"><strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur</div>
+ <div class="scan-loading" id="scanLoading"><div class="spinner"></div><strong>Recherche du prix…</strong><span>Consultation Braconnier & Outilsud</span></div>
 </section>
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
@@ -81,7 +82,9 @@ function groupSameProducts(rows){
  });
  return groups;
 }
+function finishScanLookup(){ $("scanLoading").classList.remove("show"); $("scanHelp").style.display=""; document.querySelector(".camera").style.display=""; stopScanner(true); busy=false }
 function showArticle(a,stores=[a._enseigne]){
+ finishScanLookup();
  $("productStores").innerHTML=storeBadges(stores);
  $("productName").textContent=a.denomination||"Article";
  $("productPrice").textContent=euro(a.prix_vente_tvac);
@@ -90,6 +93,7 @@ function showArticle(a,stores=[a._enseigne]){
  views("result")
 }
 function showChoices(groups){
+ finishScanLookup();
  $("choiceList").innerHTML="";
  groups.forEach(g=>{
    const a=g.article,b=document.createElement("button");b.className="choice";
@@ -108,22 +112,22 @@ async function lookup(raw){
  const load=async enseigne=>{try{const opt={cache:"no-store"};if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return [];return (j.articles||[]).map(a=>({...a,_enseigne:enseigne}))}catch{return []}};
  const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
  const rows=[...brac,...outilsud].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
- if(!rows.length){views("notfound");return}
+ if(!rows.length){finishScanLookup();views("notfound");return}
  const groups=groupSameProducts(rows);
  if(groups.length===1){showArticle(groups[0].article,groups[0].stores);return}
  showChoices(groups)}
- catch(e){views("home");$("status").textContent="Connexion impossible. Réessayez."}
+ catch(e){finishScanLookup();views("home");$("status").textContent="Connexion impossible. Réessayez."}
 }
 async function startScanner(){
  if(busy)return;if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
- busy=true;$("scanner").classList.add("open");
+ busy=true;$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("video").srcObject=stream;
  if(!("BarcodeDetector" in window)){stopScanner();busy=false;$("status").textContent="Scanner non pris en charge par ce navigateur.";return}
  const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),formats=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(f=>!supported.length||supported.includes(f)),detector=new BarcodeDetector(formats.length?{formats}:undefined);
- const loop=async()=>{if(!stream)return;try{const codes=await detector.detect($("video"));if(codes.length){const value=clean(codes[0].rawValue);if(value){stopScanner();busy=false;await lookup(value);return}}}catch(e){}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
+ const loop=async()=>{if(!stream)return;try{const codes=await detector.detect($("video"));if(codes.length){const value=clean(codes[0].rawValue);if(value){stopScanner(false);document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");await lookup(value);return}}}catch(e){}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
  catch(e){stopScanner();busy=false;$("status").textContent="Autorisez l'accès à la caméra pour scanner un article."}
 }
-function stopScanner(){if(raf)cancelAnimationFrame(raf);raf=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;$("scanner").classList.remove("open")}
-$("startScan").onclick=startScanner;$("scanAgain").onclick=startScanner;$("choicesAgain").onclick=startScanner;$("retry").onclick=startScanner;$("closeScan").onclick=()=>{stopScanner();busy=false};
+function stopScanner(closeOverlay=true){if(raf)cancelAnimationFrame(raf);raf=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;if(closeOverlay)$("scanner").classList.remove("open")}
+$("startScan").onclick=startScanner;$("scanAgain").onclick=startScanner;$("choicesAgain").onclick=startScanner;$("retry").onclick=startScanner;$("closeScan").onclick=()=>{$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";stopScanner();busy=false};
 </script>
 </body></html>
