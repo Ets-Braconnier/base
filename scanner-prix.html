@@ -11,13 +11,13 @@
 html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg)}
 body{min-height:100vh;min-height:100dvh}.app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .brandbar{background:#fff;border-bottom:4px solid transparent;border-image:linear-gradient(90deg,var(--orange) 0 50%,var(--blue2) 50% 100%) 1;padding:17px 22px;display:flex;align-items:center;justify-content:center;gap:42px;min-height:112px}
-.logo-box{width:min(290px,39vw);height:76px;display:flex;align-items:center;justify-content:center}
+.logo-box{height:76px;display:flex;align-items:center;justify-content:center}.logo-box.brac{width:min(270px,36vw)}.logo-box.outil{width:min(330px,42vw)}
 .logo-box img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 .main{width:min(760px,100%);margin:auto;padding:25px 18px 34px;display:flex;flex-direction:column;align-items:center}
 .eyebrow{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:900;text-transform:uppercase;letter-spacing:.11em;font-size:10px}.eyebrow .o{color:var(--orange)}.eyebrow .b{color:var(--blue2)}
 h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 0 8px}.lead{font-size:14px;color:var(--muted);text-align:center;margin:0 0 24px;line-height:1.5}
 .scan-card,.product,.notfound,.choices{width:100%;background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 16px 50px rgba(31,39,45,.09)}
-.scan-card{padding:22px}.scan-button{width:100%;min-height:195px;border:0;border-radius:18px;background:var(--blue2);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;cursor:pointer;box-shadow:0 10px 28px rgba(40,79,158,.20);position:relative;overflow:hidden}
+.scan-card{padding:22px}.scan-button{width:100%;min-height:195px;border:0;border-radius:18px;background:linear-gradient(115deg,#f47b00 0%,#f47b00 22%,#ee7410 34%,#d65d32 48%,#a94d5e 60%,#675080 73%,#284f9e 100%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;cursor:pointer;box-shadow:0 10px 28px rgba(40,79,158,.20);position:relative;overflow:hidden}
 .scan-button:before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--orange)}
 .scan-button svg{width:62px;height:62px}.scan-button strong{font-size:25px}.scan-button span{font-size:12px;opacity:.9}.status{margin-top:15px;text-align:center;color:var(--muted);font-size:11px;min-height:16px}
 .result,.choices,.notfound{display:none}.result.show,.choices.show,.notfound.show{display:block}.product{overflow:hidden}.product-top{padding:26px 22px 18px;text-align:center}.product-name{font-size:clamp(20px,4vw,29px);font-weight:900;line-height:1.22}
@@ -27,17 +27,17 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 .notfound{padding:30px 22px;text-align:center}.notfound h2{margin:8px 0 5px}.notfound p{color:var(--muted);font-size:12px}.retry{padding:0 24px}
 .choices{padding:20px}.choices h2{text-align:center;margin:0 0 5px}.choices>p{text-align:center;color:var(--muted);font-size:12px;margin:0 0 15px}.choice{width:100%;text-align:left;border:1px solid var(--line);border-left:5px solid var(--orange);background:#fff;border-radius:13px;padding:13px;margin-top:9px;cursor:pointer}.choice strong{display:block;font-size:14px}.choice small{display:block;color:var(--muted);margin-top:5px}.choice-price{float:right;color:var(--orange);font-size:18px;font-weight:900}
 #scanner{display:none;position:fixed;inset:0;background:#090b0d;z-index:1000;color:#fff}#scanner.open{display:flex;flex-direction:column}
-.scan-head{padding:12px 16px;background:#fff;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;border-bottom:4px solid transparent;border-image:linear-gradient(90deg,var(--orange) 0 50%,var(--blue2) 50% 100%) 1}.scan-logo{width:min(210px,34vw);height:55px;display:flex;align-items:center;justify-content:center}.scan-logo img{max-width:100%;max-height:100%;object-fit:contain}.close{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:#eef1f4;color:#15191c;border-radius:10px;width:40px;height:40px;font-weight:900;font-size:0}.close:after{content:"✕";font-size:17px}
+.scan-head{padding:12px 16px;background:#fff;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;border-bottom:4px solid transparent;border-image:linear-gradient(90deg,var(--orange) 0 50%,var(--blue2) 50% 100%) 1}.scan-logo{height:55px;display:flex;align-items:center;justify-content:center}.scan-logo.brac{width:min(190px,31vw)}.scan-logo.outil{width:min(235px,36vw)}.scan-logo img{max-width:100%;max-height:100%;object-fit:contain}.close{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:#eef1f4;color:#15191c;border-radius:10px;width:40px;height:40px;font-weight:900;font-size:0}.close:after{content:"✕";font-size:17px}
 .camera{position:relative;flex:1;min-height:0;overflow:hidden;background:#000}.camera video{width:100%;height:100%;object-fit:cover}.target{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(84vw,560px);height:190px;border-radius:18px;border:3px solid var(--orange);box-shadow:0 0 0 9999px rgba(0,0,0,.46)}.target:after{content:"";position:absolute;left:0;right:0;top:50%;height:3px;background:var(--blue2)}
 .scan-help{background:#0d1013;text-align:center;padding:16px 18px 22px;font-size:13px}.scan-help strong{display:block;font-size:16px;margin-bottom:4px}
-@media(max-width:560px){.brandbar{min-height:92px;padding:12px;gap:18px}.logo-box{width:43vw;height:58px}.main{padding:20px 12px 24px}.scan-card{padding:12px}.scan-button{min-height:225px}.refs{grid-template-columns:1fr}.scan-head{gap:12px;justify-content:flex-start;padding-right:58px}.scan-logo{width:37vw;height:48px}}
+@media(max-width:560px){.brandbar{min-height:92px;padding:12px;gap:18px}.logo-box{height:58px}.logo-box.brac{width:42vw}.logo-box.outil{width:46vw}.main{padding:20px 12px 24px}.scan-card{padding:12px}.scan-button{min-height:225px}.refs{grid-template-columns:1fr}.scan-head{gap:12px;justify-content:flex-start;padding-right:58px}.scan-logo{height:48px}.scan-logo.brac{width:34vw}.scan-logo.outil{width:39vw}}
 </style>
 </head>
 <body>
 <div class="app">
 <header class="brandbar">
- <div class="logo-box"><img src="logo-braconnier.png" alt="Braconnier"></div>
- <div class="logo-box"><img src="logo-outilsud.png" alt="Outilsud"></div>
+ <div class="logo-box brac"><img src="logo-braconnier.png" alt="Braconnier"></div>
+ <div class="logo-box outil"><img src="logo-outilsud.png" alt="Outilsud"></div>
 </header>
 <main class="main">
  <div id="homeView" style="width:100%">
@@ -50,7 +50,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
  <section class="notfound" id="notFound"><h2>Article introuvable</h2><p>Ce code n'a pas été trouvé dans notre base articles.</p><button class="retry" id="retry">Scanner un autre article</button></section>
 </main></div>
 <section id="scanner">
- <div class="scan-head"><div class="scan-logo"><img src="logo-braconnier.png" alt="Braconnier"></div><div class="scan-logo"><img src="logo-outilsud.png" alt="Outilsud"></div><button class="close" id="closeScan">Fermer</button></div>
+ <div class="scan-head"><div class="scan-logo brac"><img src="logo-braconnier.png" alt="Braconnier"></div><div class="scan-logo outil"><img src="logo-outilsud.png" alt="Outilsud"></div><button class="close" id="closeScan">Fermer</button></div>
  <div class="camera"><video id="video" autoplay muted playsinline></video><div class="target"></div></div>
  <div class="scan-help"><strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur</div>
 </section>
