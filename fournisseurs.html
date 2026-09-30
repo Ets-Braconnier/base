@@ -359,7 +359,7 @@ input,select,button{font-family:inherit}
 <style id="articles-style">
 .article-btn{margin-top:12px;border:0;border-radius:9px;padding:8px 13px;background:#1f6f5f;color:#fff;font-weight:700;cursor:pointer}.article-btn:hover{filter:brightness(.94)}.article-btn.zero{background:#e5e7eb;color:#6b7280;cursor:default}
 #articleModal{display:none;position:fixed;inset:0;z-index:9999;background:#f6f7f9;overflow:auto}#articleModal.open{display:block}.article-shell{max-width:1500px;margin:auto;padding:20px}.article-top{position:sticky;top:0;z-index:3;background:#f6f7f9;padding:4px 0 14px}.article-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.article-title{font-size:24px;font-weight:800}.article-close{border:0;border-radius:9px;padding:9px 14px;background:#222;color:#fff;cursor:pointer}.article-search{width:100%;box-sizing:border-box;margin-top:12px;padding:12px 14px;border:1px solid #ccd2d8;border-radius:10px;font-size:16px;background:#fff}.article-info{margin:8px 0;color:#667085}.article-table-wrap{overflow:auto;background:#fff;border-radius:12px;border:1px solid #e4e7ec}.article-table{border-collapse:collapse;width:100%;min-width:1180px}.article-table th,.article-table td{padding:9px 10px;border-bottom:1px solid #eceff2;text-align:left;vertical-align:top}.article-table th{position:sticky;top:0;background:#eef2f3;font-size:13px;white-space:nowrap;cursor:pointer}.article-table td{font-size:13px}.article-table tr:hover td{background:#f8fafb}.article-empty{padding:30px;text-align:center;color:#667085}</style>
-<div aria-hidden="true" id="articleModal"><div class="article-shell"><div class="article-top"><div class="article-head"><div><div class="article-title" id="articleTitle">Articles</div><div class="article-info" id="articleInfo"></div></div><div class="article-actions"><button class="import-btn" onclick="articleImportInput.click()">Importer Excel</button><button class="export-btn" onclick="exportCurrentArticlesExcel()">Exporter Excel</button><button class="article-close" onclick="closeArticles()">Fermer ✕</button><input accept=".xlsx,.xls" hidden="" id="articleImportInput" type="file"/></div></div><input class="article-search" id="articleSearch" placeholder="Recherche tolérante : article, référence, désignation, EAN…" type="search"/></div><div class="article-table-wrap"><table class="article-table"><thead><tr><th data-col="0">N° d'article</th><th data-col="1">Num fournisseur</th><th data-col="2">Nomfour</th><th data-col="4">Dénomination</th><th data-col="5">Unité</th><th data-col="6">Emballage</th><th data-col="7">Groupe principal</th><th data-col="8">Sous-groupe</th><th data-col="9">Code EAN</th></tr></thead><tbody id="articleBody"></tbody></table></div></div></div>
+<div aria-hidden="true" id="articleModal"><div class="article-shell"><div class="article-top"><div class="article-head"><div><div class="article-title" id="articleTitle">Articles</div><div class="article-info" id="articleInfo"></div></div><div class="article-actions"><button class="import-btn" onclick="articleImportInput.click()">Importer Excel</button><button class="export-btn" onclick="exportCurrentArticlesExcel()">Exporter Excel</button><button class="article-close" onclick="closeArticles()">Fermer ✕</button><input accept=".xlsx,.xls" hidden="" id="articleImportInput" type="file"/></div></div><input class="article-search" id="articleSearch" placeholder="Recherche tolérante : article, référence, désignation, EAN…" type="search"/></div><div class="article-table-wrap"><table class="article-table"><thead><tr><th data-col="0">N° d'article</th><th data-col="1">Num fournisseur</th><th data-col="2">Nomfour</th><th data-col="4">Dénomination</th><th data-col="5">Unité</th><th data-col="6">Emballage</th><th data-col="7">Groupe principal</th><th data-col="8">Sous-groupe</th><th data-col="9">Code EAN</th><th data-col="10">Prix d’achat HTVA</th><th data-col="11">Prix de vente HTVA</th><th data-col="12">Prix de vente TVAC</th></tr></thead><tbody id="articleBody"></tbody></table></div></div></div>
 <style id="tariff-style">
 #tariffModal{display:none;position:fixed;inset:0;z-index:10000;background:#f3f5f6;overflow:auto}
 #tariffModal.open{display:block}
@@ -970,7 +970,10 @@ function articleObjectToRow(a){
   a.emballage||"",
   a.groupe_principal||"",
   a.sous_groupe||"",
-  a.ean||""
+  a.ean||"",
+  Number(a.prix_achat_htva??0)||0,
+  Number(a.prix_vente_htva??0)||0,
+  Number(a.prix_vente_tvac??0)||0
  ];
 }
 
@@ -994,7 +997,7 @@ async function exportCurrentArticlesExcel(){
   const x=DATA[currentArticleSupplier],fid=Number(x._d1_id);
   if(!Number.isInteger(fid)||fid<=0)throw new Error("Identifiant D1 du fournisseur introuvable");
   const data=await d1Get("/articles?fournisseur_id="+encodeURIComponent(fid));
-  const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN"];
+  const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN","Prix d’achat HTVA","Prix de vente HTVA","Prix de vente TVAC"];
   downloadBlob(xlsxBlob(h,(data.articles||[]).map(articleObjectToRow),"Articles"),"Articles_"+safeFileName(x.fournisseur_source)+".xlsx");
  }catch(err){console.error(err);alert("Export articles impossible depuis Cloudflare D1 : "+err.message)}
 }
@@ -1003,7 +1006,7 @@ async function exportArticlesZip(){
  try{
   const files={},toBytes=async blob=>new Uint8Array(await blob.arrayBuffer());
   const suppliers=(await d1Get("/fournisseurs")).fournisseurs||[];
-  const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN"];
+  const h=["N° d'article","Num fournisseur","Nomfour","Dénomination","Unité","Emballage","Groupe principal","Sous-groupe","Code EAN","Prix d’achat HTVA","Prix de vente HTVA","Prix de vente TVAC"];
   for(const f of suppliers){
    if(Number(f.nb_articles||0)<=0)continue;
    const rows=((await d1Get("/articles?fournisseur_id="+encodeURIComponent(f.id))).articles||[]).map(articleObjectToRow);
@@ -1029,6 +1032,14 @@ function ensureXlsx(){if(typeof XLSX==="undefined"){alert("Le module Excel n'a p
 function readExcelFile(file,cb){if(!ensureXlsx())return;const fr=new FileReader();fr.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:"array",cellText:true,cellDates:false});const ws=wb.Sheets[wb.SheetNames[0]];const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});cb(a)}catch(err){console.error(err);alert("Impossible de lire ce fichier Excel.")}};fr.readAsArrayBuffer(file)}
 function cleanRows(rows,width){return rows.map(r=>Array.from({length:width},(_,i)=>r[i]??"")).filter(r=>r.some(v=>String(v).trim()!==""))}
 function normHeader(s){return n(String(s||"")).replace(/[^a-z0-9]+/g,"")}
+function parsePriceValue(v){
+ const raw=String(v??"").trim().replace(/\s/g,"").replace(/€/g,"");
+ if(!raw)return 0;
+ let normalized=raw;
+ if(raw.includes(",")&&raw.includes(".")){normalized=raw.lastIndexOf(",")>raw.lastIndexOf(".")?raw.replace(/\./g,"").replace(",","."):raw.replace(/,/g,"");}
+ else if(raw.includes(",")){normalized=raw.replace(",",".");}
+ const x=Number(normalized);return Number.isFinite(x)?x:0;
+}
 
 
 supplierImportInput.addEventListener("change",e=>{
@@ -1349,7 +1360,10 @@ globalArticleImportInput.addEventListener("change",e=>{
     emballage:find("Emballage"),
     groupe_principal:find("Groupe principal"),
     sous_groupe:find("Sous-groupe"),
-    ean:find("Code EAN","S_CLE2")
+    ean:find("Code EAN","S_CLE2"),
+    prix_achat_htva:find("Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
+    prix_vente_htva:find("Prix 1","Prix de vente HTVA","S_PRIX_HT"),
+    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC")
    };
 
    if(cols.numero_article<0)throw new Error("Colonne N° d'article introuvable.");
@@ -1372,6 +1386,9 @@ globalArticleImportInput.addEventListener("change",e=>{
      const i=cols[key];
      if(i>=0)o[key]=String(r[i]??"").trim();
     }
+    o.prix_achat_htva=cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0;
+    o.prix_vente_htva=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
+    o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):0;
     const aliases=loadSupplierAliases();
     const rememberedId=aliases[supplierAliasKey(supplierName)];
     const remembered=rememberedId?supplierById(rememberedId):null;
@@ -1558,7 +1575,10 @@ articleImportInput.addEventListener("change",e=>{
     emballage:find("Emballage"),
     groupe_principal:find("Groupe principal"),
     sous_groupe:find("Sous-groupe"),
-    ean:find("Code EAN","S_CLE2")
+    ean:find("Code EAN","S_CLE2"),
+    prix_achat_htva:find("Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
+    prix_vente_htva:find("Prix 1","Prix de vente HTVA","S_PRIX_HT"),
+    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC")
    };
 
    if(cols.numero_article<0){
@@ -1574,6 +1594,9 @@ articleImportInput.addEventListener("change",e=>{
        const i=cols[key];
        if(i>=0)o[key]=String(r[i]??"").trim();
       }
+      o.prix_achat_htva=cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0;
+      o.prix_vente_htva=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
+      o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):0;
       return o;
     });
 
@@ -1644,7 +1667,10 @@ articleImportInput.addEventListener("change",e=>{
      x.emballage||"",
      x.groupe_principal||"",
      x.sous_groupe||"",
-     x.ean||""
+     x.ean||"",
+     Number(x.prix_achat_htva??0)||0,
+     Number(x.prix_vente_htva??0)||0,
+     Number(x.prix_vente_tvac??0)||0
     ]);
     ARTICLES[String(currentArticleSupplier)]=currentArticleRows.slice();
     DATA[currentArticleSupplier].nb_articles_excel=currentArticleRows.length;
@@ -1914,10 +1940,11 @@ fileDropZone.addEventListener("click",()=>supplierFileInput.click());
 ["dragleave","drop"].forEach(ev=>fileDropZone.addEventListener(ev,e=>{e.preventDefault();fileDropZone.classList.remove("drag")}));
 fileDropZone.addEventListener("drop",e=>uploadSupplierFiles(e.dataTransfer.files));
 
-let currentArticleSupplier=-1,currentArticleRows=[],articleSortCol=-1,articleSortAsc=true;const ARTICLE_COLS=[0,1,2,4,5,6,7,8,9];
+let currentArticleSupplier=-1,currentArticleRows=[],articleSortCol=-1,articleSortAsc=true;const ARTICLE_COLS=[0,1,2,4,5,6,7,8,9,10,11,12];
 
 function closeArticles(){articleModal.classList.remove("open");articleModal.setAttribute("aria-hidden","true");document.body.style.overflow=""}
-function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactRows=currentArticleRows.filter(r=>[0,1,9].some(c=>n(r[c]||"")===q));rows=exactRows.length?exactRows:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]||"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]||"").localeCompare(String(b[articleSortCol]||""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(r[c]||"")}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="9">Aucun article trouvé.</td></tr>`}
+function articleCellValue(r,c){if(c>=10&&c<=12){const v=Number(r[c]??0);return (Number.isFinite(v)?v:0).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €"}return r[c]??""}
+function renderArticles(){const raw=String(articleSearch.value||"").trim();const q=n(raw);let rows;if(q){const exactRows=currentArticleRows.filter(r=>[0,1,9].some(c=>n(r[c]||"")===q));rows=exactRows.length?exactRows:currentArticleRows.filter(r=>smartMatch(raw,ARTICLE_COLS.map(c=>r[c]??"").join(" ")));}else{rows=currentArticleRows.slice();}if(articleSortCol>=0)rows.sort((a,b)=>String(a[articleSortCol]??"").localeCompare(String(b[articleSortCol]??""),"fr",{numeric:true,sensitivity:"base"})*(articleSortAsc?1:-1));articleInfo.textContent=rows.length+" article(s) affiché(s) sur "+currentArticleRows.length;articleBody.innerHTML=rows.length?rows.map(r=>`<tr>${ARTICLE_COLS.map(c=>`<td>${esc(articleCellValue(r,c))}</td>`).join("")}</tr>`).join(""):`<tr><td class="article-empty" colspan="12">Aucun article trouvé.</td></tr>`}
 articleSearch.addEventListener("input",()=>{const clean=articleSearch.value.replace(/#/g,"");if(clean!==articleSearch.value)articleSearch.value=clean;renderArticles()});document.querySelectorAll(".article-table th").forEach(th=>th.addEventListener("click",()=>{const c=Number(th.dataset.col);if(articleSortCol===c)articleSortAsc=!articleSortAsc;else{articleSortCol=c;articleSortAsc=true}renderArticles()}));document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(tariffModal.classList.contains("open"))closeTariffs();else closeArticles()}});
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 let API_CONNECTED=false;
@@ -1969,7 +1996,7 @@ async function getSupplierArticles(ix){
  if(articleRequests.has(x._d1_id))return articleRequests.get(x._d1_id);
  const pending=(async()=>{
   const j=await d1Get("/articles?fournisseur_id="+x._d1_id);
-  const rows=(j.articles||[]).map(a=>[a.numero_article||"",a.num_fournisseur||"",a.nom_fournisseur||"","",a.denomination||"",a.unite||"",a.emballage||"",a.groupe_principal||"",a.sous_groupe||"",a.ean||""]);
+  const rows=(j.articles||[]).map(a=>[a.numero_article||"",a.num_fournisseur||"",a.nom_fournisseur||"","",a.denomination||"",a.unite||"",a.emballage||"",a.groupe_principal||"",a.sous_groupe||"",a.ean||"",Number(a.prix_achat_htva??0)||0,Number(a.prix_vente_htva??0)||0,Number(a.prix_vente_tvac??0)||0]);
   if(generation===dataGeneration){ARTICLES[String(ix)]=rows;DATA[ix]._d1_nb_articles=rows.length;DATA[ix].nb_articles_excel=rows.length;DATA[ix].nb=rows.length;rebuildProductSearchUnits()}
   return rows;
  })();
@@ -1995,9 +2022,9 @@ async function openArticles(ix){
  articleTitle.textContent="Articles — "+DATA[ix].fournisseur_source;
  articleModal.classList.add("open");articleModal.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
  currentArticleRows=[];articleInfo.textContent="Chargement des articles…";
- articleBody.innerHTML='<tr><td class="article-empty" colspan="9">Chargement…</td></tr>';
+ articleBody.innerHTML='<tr><td class="article-empty" colspan="12">Chargement…</td></tr>';
  try{const rows=await getSupplierArticles(ix);if(currentArticleSupplier!==ix)return;currentArticleRows=rows.slice();renderArticles()}
- catch(err){if(currentArticleSupplier!==ix)return;articleInfo.textContent="Chargement impossible : "+err.message;articleBody.innerHTML='<tr><td colspan="9">Fermez puis rouvrez cette fenêtre pour réessayer.</td></tr>'}
+ catch(err){if(currentArticleSupplier!==ix)return;articleInfo.textContent="Chargement impossible : "+err.message;articleBody.innerHTML='<tr><td colspan="12">Fermez puis rouvrez cette fenêtre pour réessayer.</td></tr>'}
  articleSearch.focus();
 }
 const supplierEditor=document.getElementById("supplierEditor"),supplierForm=document.getElementById("supplierForm");
