@@ -68,7 +68,22 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 .card{min-width:0}.actions{grid-template-columns:minmax(0,82px) minmax(0,88px)}.portal-brand{min-width:0}.portal-brand>div:last-child{min-width:0}.portal-logo{flex-shrink:0}@media(max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:370px){.grid{grid-template-columns:1fr}}
 .add-supplier-btn{background:#fff!important;color:#303080!important;border:1px solid #303080!important}.add-supplier-btn:hover{background:#f3f3fb!important}
 .modal-overlay{position:fixed;inset:0;background:rgba(20,27,33,.58);z-index:20000;display:none;align-items:center;justify-content:center;padding:18px}.modal-overlay.open{display:flex}.supplier-modal{width:min(620px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:20px}.supplier-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.supplier-modal-head h2{font-size:18px;margin:0}.modal-x{border:0;background:#eef1f3;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:18px}.supplier-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.supplier-form label{font-size:11px;font-weight:700;color:#34404a;display:flex;flex-direction:column;gap:5px}.supplier-form .full{grid-column:1/-1}.supplier-form input,.supplier-form select{height:38px;border:1px solid #d9dee3;border-radius:7px;padding:0 10px;font:12px Arial;background:#fff}.supplier-form input:focus,.supplier-form select:focus{outline:2px solid #303080;outline-offset:1px}.form-note{grid-column:1/-1;font-size:10px;color:#69757e;margin-top:-3px}.form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:5px}.form-actions button{height:36px;border-radius:7px;padding:0 15px;font:700 11px Arial;cursor:pointer}.cancel-btn{background:#eef1f3;border:0;color:#27323c}.save-btn{background:#303080;border:0;color:#fff}.save-btn:disabled{opacity:.55;cursor:wait}.dynamic-badge{font-size:8px;color:#6b7280;margin-top:2px}.card .actions{grid-template-columns:repeat(3,minmax(0,72px))}.edit-supplier-btn{border:1px solid #d9dee3!important;background:#eef1f3!important;color:#29343d!important}.edit-supplier-btn:hover{background:#dde3e7!important}@media(max-width:560px){.supplier-form{grid-template-columns:1fr}.supplier-form .full,.form-note,.form-actions{grid-column:1}}
-</style><script>
+
+.delete-supplier-btn{background:#fff!important;color:#b42318!important;border:1px solid #f0b7b2!important}
+.delete-supplier-btn:hover{background:#fff1f0!important}
+.category-manager-list{display:grid;gap:8px;margin-top:12px}
+.category-manager-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #dfe4ea;border-radius:8px;background:#f8fafc}
+.category-manager-row button{border:1px solid #f0b7b2;background:#fff;color:#b42318;border-radius:7px;padding:6px 9px;font-weight:700;cursor:pointer}
+</style><div aria-modal="true" class="modal-overlay" id="categoryModal" onclick="if(event.target===this)closeCategoryModal()" role="dialog">
+<div class="supplier-modal">
+<div class="supplier-modal-head"><h2>Gérer les catégories</h2><button aria-label="Fermer" class="modal-x" onclick="closeCategoryModal()" type="button">×</button></div>
+<form class="supplier-form" onsubmit="saveCategory(event)">
+<label class="full">Nouvelle catégorie<input autocomplete="off" id="newCategoryName" maxlength="100" placeholder="Ex. Peinture" required=""/></label>
+<div class="form-actions"><button class="cancel-btn" onclick="closeCategoryModal()" type="button">Fermer</button><button class="save-btn" type="submit">Ajouter</button></div>
+</form>
+<div class="category-manager-list" id="categoryManagerList"></div>
+</div></div>
+<script>
 (() => {
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
@@ -115,7 +130,7 @@ body.outilsud-ready .section:not([data-dynamic="1"]){display:none!important}
 </head>
 <body>
 <div class="wrap">
-<header class="unified-header"><div class="unified-brand"><div class="unified-logo">O</div><div><h1>NetStore Outilsud</h1><p>Outilsud · fournisseurs en ligne et accès sécurisés</p></div></div><div class="unified-tools"><button class="unified-menu-btn add-supplier-btn" onclick="openSupplierModal()" type="button">＋ Ajouter un fournisseur</button><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a class="active" href="netstore.html">NetStore</a><a href="fournisseurs-outilsud.html">Base fournisseurs</a><a href="inventaire-outilsud.html">Inventaire</a><a href="commandes-outilsud.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
+<header class="unified-header"><div class="unified-brand"><div class="unified-logo">O</div><div><h1>NetStore Outilsud</h1><p>Outilsud · fournisseurs en ligne et accès sécurisés</p></div></div><div class="unified-tools"><button class="unified-menu-btn add-supplier-btn" onclick="openSupplierModal()" type="button">＋ Ajouter un fournisseur</button><button class="unified-menu-btn add-supplier-btn" onclick="openCategoryModal()" type="button">＋ Catégorie</button><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a class="active" href="netstore.html">NetStore</a><a href="fournisseurs-outilsud.html">Base fournisseurs</a><a href="inventaire-outilsud.html">Inventaire</a><a href="commandes-outilsud.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <div class="search-bar"><input aria-label="Rechercher un fournisseur" class="search" id="q" oninput="filterAll()" placeholder="Rechercher un fournisseur…" type="search"/></div>
 <section class="section c0">
 <div class="category"><strong>⚡  ÉLECTRICITÉ</strong></div>
@@ -417,9 +432,7 @@ body.outilsud-ready .section:not([data-dynamic="1"]){display:none!important}
 <div class="supplier-modal-head"><h2 id="supplierModalTitle">Ajouter un fournisseur</h2><button aria-label="Fermer" class="modal-x" onclick="closeSupplierModal()" type="button">×</button></div>
 <form class="supplier-form" id="supplierForm" onsubmit="saveSupplier(event)"><input id="supplierEditId" type="hidden" value=""/><input id="supplierLegacyName" type="hidden" value=""/>
 <label>Nom du fournisseur<input autocomplete="off" id="supplierName" maxlength="160" required=""/></label>
-<label>Catégorie<select id="supplierCategory" required="">
-<option value="ÉLECTRICITÉ">⚡ ÉLECTRICITÉ</option><option value="SANITAIRE &amp; CHAUFFAGE">● SANITAIRE &amp; CHAUFFAGE</option><option value="OUTILLAGE &amp; FIXATIONS">🔧 OUTILLAGE &amp; FIXATIONS</option><option value="MATÉRIAUX DE CONSTRUCTION">▦ MATÉRIAUX DE CONSTRUCTION</option><option value="MENUISERIE &amp; AMÉNAGEMENT">▤ MENUISERIE &amp; AMÉNAGEMENT</option><option value="AUTRES">• AUTRES</option>
-</select></label>
+<label>Catégorie<select id="supplierCategory" required=""></select></label>
 <label class="full">Adresse du site / NetStore<input id="supplierUrl" placeholder="https://..." required="" type="url"/></label>
 <label class="full">URL du logo <span style="font-weight:400">(facultatif)</span><input id="supplierLogo" placeholder="https://..." type="url"/></label>
 <label>Identifiant<input autocomplete="off" id="supplierUsername"/></label>
@@ -484,6 +497,73 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function initials(name){return String(name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();}
 function fallbackLogo(url){try{return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(url).hostname)}&sz=128`;}catch{return "";}}
 function authHeaders(jsonBody=false){const t=sessionStorage.getItem(PORTAL_TOKEN_KEY);const h={"Authorization":"Bearer "+t,"X-Enseigne":"outilsud"};if(jsonBody)h["Content-Type"]="application/json";return h;}
+
+let customCategories=[];
+async function loadCategories(){
+ try{
+  const r=await fetch(AUTH_API+"/categories",{headers:authHeaders()});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||"Chargement des catégories impossible.");
+  customCategories=d.categories||[];
+  refreshCategorySelect();
+  renderCategoryManager();
+ }catch(e){console.error(e);}
+}
+function refreshCategorySelect(){
+ const sel=document.getElementById("supplierCategory"); if(!sel)return;
+ const current=sel.value;
+ const base=[];
+ const names=[...base,...customCategories.map(x=>x.name)];
+ sel.innerHTML=names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+ if(names.includes(current))sel.value=current;
+}
+function openCategoryModal(){document.getElementById("categoryModal").classList.add("open");loadCategories();setTimeout(()=>document.getElementById("newCategoryName").focus(),0);}
+function closeCategoryModal(){document.getElementById("categoryModal").classList.remove("open");}
+async function saveCategory(e){
+ e.preventDefault(); const name=document.getElementById("newCategoryName").value.trim(); if(!name)return;
+ const r=await fetch(AUTH_API+"/categories",{method:"POST",headers:authHeaders(true),body:JSON.stringify({name})});
+ const d=await r.json().catch(()=>({})); if(!r.ok){alert(d.error||"Impossible d'ajouter la catégorie.");return;}
+ document.getElementById("newCategoryName").value=""; await loadCategories(); await loadCategories();hideDeletedLegacy();loadDynamicSuppliers();
+}
+function renderCategoryManager(){
+ const host=document.getElementById("categoryManagerList"); if(!host)return;
+ host.innerHTML=customCategories.length?"":"<div class=\"form-note\">Aucune catégorie personnalisée.</div>";
+ customCategories.forEach(c=>{
+  const row=document.createElement("div"); row.className="category-manager-row";
+  row.innerHTML=`<strong>${esc(c.name)}</strong><button type="button">Supprimer</button>`;
+  row.querySelector("button").onclick=()=>deleteCategory(c.id,c.name);
+  host.appendChild(row);
+ });
+}
+async function deleteCategory(id,name){
+ if(!confirm(`Supprimer la catégorie « ${name} » ?`))return;
+ const r=await fetch(AUTH_API+"/categories/"+encodeURIComponent(id),{method:"DELETE",headers:authHeaders()});
+ const d=await r.json().catch(()=>({})); if(!r.ok){alert(d.error||"Suppression impossible.");return;}
+ await loadCategories(); await loadDynamicSuppliers();
+}
+async function deleteSupplier(id,name){
+ if(!confirm(`Supprimer définitivement le fournisseur « ${name} » ?`))return;
+ const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id),{method:"DELETE",headers:authHeaders()});
+ const d=await r.json().catch(()=>({})); if(!r.ok){alert(d.error||"Suppression impossible.");return;}
+ await loadDynamicSuppliers();
+}
+async function deleteLegacySupplier(card){
+ const name=card.querySelector(".supplier-name")?.textContent?.trim()||"";
+ if(!name||!confirm(`Retirer le fournisseur « ${name} » du NetStore ?`))return;
+ const r=await fetch(AUTH_API+"/legacy-hidden",{method:"POST",headers:authHeaders(true),body:JSON.stringify({name})});
+ const d=await r.json().catch(()=>({})); if(!r.ok){alert(d.error||"Suppression impossible.");return;}
+ card.remove();
+}
+async function hideDeletedLegacy(){
+ try{
+  const r=await fetch(AUTH_API+"/legacy-hidden",{headers:authHeaders()}); if(!r.ok)return;
+  const d=await r.json(); const hidden=new Set((d.names||[]).map(x=>String(x).toLowerCase()));
+  document.querySelectorAll('.card:not([data-dynamic-card="1"])').forEach(c=>{
+   const n=c.querySelector(".supplier-name")?.textContent?.trim().toLowerCase()||"";
+   if(hidden.has(n))c.remove();
+  });
+ }catch{}
+}
 
 let dynamicSupplierCache=[];
 function resetSupplierForm(){document.getElementById("supplierForm").reset();document.getElementById("supplierEditId").value="";document.getElementById("supplierLegacyName").value="";document.getElementById("supplierModalTitle").textContent="Ajouter un fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer";}
@@ -580,7 +660,7 @@ async function loadDynamicSuppliers(){
   for(const x of (data.suppliers||[])){(groups[x.category]??=[]).push(x);}
 
   Object.entries(groups).forEach(([cat,items])=>{
-   const meta=CATEGORY_META[cat]||CATEGORY_META.AUTRES;
+   const meta=CATEGORY_META[cat]||{cls:"c5",label:"• &nbsp;"+esc(cat)};
 
    // Outilsud possède ses propres sections, créées uniquement depuis sa base D1.
    let section=document.createElement("section");
@@ -596,8 +676,8 @@ async function loadDynamicSuppliers(){
     card.className="card";
     card.dataset.name=String(x.name||"").toLowerCase();
     card.dataset.dynamicCard="1";
-    card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button class="edit-supplier-btn" type="button">Modifier</button><button class="access-supplier-btn" type="button">Accès</button></div>`;
-    card.querySelector(".edit-supplier-btn").addEventListener("click",()=>editSupplier(x.id));
+    card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button class="edit-supplier-btn" type="button">Modifier</button><button class="delete-supplier-btn" type="button">Supprimer</button><button class="access-supplier-btn" type="button">Accès</button></div>`;
+    card.querySelector(".edit-supplier-btn").addEventListener("click",()=>editSupplier(x.id));card.querySelector(".delete-supplier-btn").addEventListener("click",()=>deleteSupplier(x.id,x.name));
     card.querySelector(".access-supplier-btn").addEventListener("click",()=>showDynamicCredentials(x.id));
     grid.appendChild(card);
    });
