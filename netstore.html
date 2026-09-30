@@ -74,6 +74,10 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
 .category-manager-list{display:grid;gap:8px;margin-top:12px}
 .category-manager-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #dfe4ea;border-radius:8px;background:#f8fafc}
 .category-manager-row button{border:1px solid #f0b7b2;background:#fff;color:#b42318;border-radius:7px;padding:6px 9px;font-weight:700;cursor:pointer}
+
+.delete-modal-btn{background:#fff1f0!important;border:1px solid #e7a6a0!important;color:#b42318!important;font-weight:700}
+.delete-modal-btn:hover{background:#ffe5e2!important}
+.form-actions-spacer{flex:1}
 </style><div aria-modal="true" class="modal-overlay" id="categoryModal" onclick="if(event.target===this)closeCategoryModal()" role="dialog">
 <div class="supplier-modal">
 <div class="supplier-modal-head"><h2>Gérer les catégories</h2><button aria-label="Fermer" class="modal-x" onclick="closeCategoryModal()" type="button">×</button></div>
@@ -428,7 +432,7 @@ body{background:#f7f7f7!important}
 <label>Identifiant<input autocomplete="off" id="supplierUsername"/></label>
 <label>Mot de passe<input autocomplete="new-password" id="supplierPassword" type="password"/></label>
 <div class="form-note">L’identifiant et le mot de passe sont envoyés uniquement au Worker puis chiffrés avant leur enregistrement dans D1.</div>
-<div class="form-actions"><button class="cancel-btn" onclick="closeSupplierModal()" type="button">Annuler</button><button class="save-btn" id="saveSupplierBtn" type="submit">Enregistrer</button></div>
+<div class="form-actions"><button class="delete-modal-btn" id="deleteSupplierModalBtn" onclick="deleteSupplierFromModal()" type="button" style="display:none">Supprimer le fournisseur</button><span class="form-actions-spacer"></span><button class="cancel-btn" onclick="closeSupplierModal()" type="button">Annuler</button><button class="save-btn" id="saveSupplierBtn" type="submit">Enregistrer</button></div>
 </form>
 </div>
 </div>
@@ -531,6 +535,26 @@ async function deleteCategory(id,name){
  const d=await r.json().catch(()=>({})); if(!r.ok){alert(d.error||"Suppression impossible.");return;}
  await loadCategories(); await loadDynamicSuppliers();
 }
+async function deleteSupplierFromModal(){
+ const id=document.getElementById("supplierEditId").value;
+ const name=document.getElementById("supplierName").value.trim();
+ if(id){
+  if(!confirm(`Supprimer définitivement le fournisseur « ${name} » ?`))return;
+  const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id),{method:"DELETE",headers:authHeaders()});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){alert(d.error||"Suppression impossible.");return;}
+  closeSupplierModal();resetSupplierForm();await loadDynamicSuppliers();return;
+ }
+ if(editingLegacyCard){
+  const card=editingLegacyCard;
+  const legacyName=card.querySelector(".supplier-name")?.textContent?.trim()||name;
+  if(!legacyName||!confirm(`Retirer le fournisseur « ${legacyName} » du NetStore ?`))return;
+  const r=await fetch(AUTH_API+"/legacy-hidden",{method:"POST",headers:authHeaders(true),body:JSON.stringify({name:legacyName})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){alert(d.error||"Suppression impossible.");return;}
+  closeSupplierModal();card.remove();resetSupplierForm();
+ }
+}
 async function deleteSupplier(id,name){
  if(!confirm(`Supprimer définitivement le fournisseur « ${name} » ?`))return;
  const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id),{method:"DELETE",headers:authHeaders()});
@@ -555,8 +579,9 @@ async function hideDeletedLegacy(){
  }catch{}
 }
 
+let editingLegacyCard=null;
 let dynamicSupplierCache=[];
-function resetSupplierForm(){document.getElementById("supplierForm").reset();document.getElementById("supplierEditId").value="";document.getElementById("supplierLegacyName").value="";document.getElementById("supplierModalTitle").textContent="Ajouter un fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer";}
+function resetSupplierForm(){document.getElementById("supplierForm").reset();document.getElementById("supplierEditId").value="";document.getElementById("supplierLegacyName").value="";editingLegacyCard=null;document.getElementById("supplierModalTitle").textContent="Ajouter un fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer";document.getElementById("deleteSupplierModalBtn").style.display="none";}
 function openSupplierModal(){resetSupplierForm();document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);}
 function closeSupplierModal(){document.getElementById("supplierModal").classList.remove("open");}
 async function editSupplier(id){
@@ -564,7 +589,7 @@ async function editSupplier(id){
  document.getElementById("supplierEditId").value=x.id;
  document.getElementById("supplierName").value=x.name||"";document.getElementById("supplierCategory").value=x.category||"AUTRES";document.getElementById("supplierUrl").value=x.url||"";document.getElementById("supplierLogo").value=x.logo_url||"";
  try{const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id)+"/credentials",{headers:authHeaders()});if(r.ok){const c=await r.json();document.getElementById("supplierUsername").value=c.i||"";document.getElementById("supplierPassword").value=c.p||"";}}catch{}
- document.getElementById("supplierModalTitle").textContent="Modifier le fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer les modifications";document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);
+ document.getElementById("supplierModalTitle").textContent="Modifier le fournisseur";document.getElementById("saveSupplierBtn").textContent="Enregistrer les modifications";document.getElementById("deleteSupplierModalBtn").style.display="inline-flex";document.getElementById("supplierModal").classList.add("open");setTimeout(()=>document.getElementById("supplierName").focus(),0);
 }
 
 function categoryFromSection(section){
@@ -579,6 +604,7 @@ async function editLegacySupplier(card){
  const onclick=access?.getAttribute('onclick')||"";
  const m=onclick.match(/showCredentials\((\d+)\)/);
  resetSupplierForm();
+ editingLegacyCard=card;
  document.getElementById("supplierLegacyName").value=name;
  document.getElementById("supplierName").value=name;
  document.getElementById("supplierCategory").value=categoryFromSection(card.closest('.section'));
@@ -588,13 +614,14 @@ async function editLegacySupplier(card){
  if(m){try{const r=await fetch(AUTH_API+"/credentials/"+m[1],{headers:authHeaders()});if(r.ok){const c=await r.json();document.getElementById("supplierUsername").value=c.i||"";document.getElementById("supplierPassword").value=c.p||"";}}catch{}}
  document.getElementById("supplierModalTitle").textContent="Modifier le fournisseur";
  document.getElementById("saveSupplierBtn").textContent="Enregistrer les modifications";
+ document.getElementById("deleteSupplierModalBtn").style.display="inline-flex";
  document.getElementById("supplierModal").classList.add("open");
 }
 function enableLegacyEditing(){
  document.querySelectorAll('.card:not([data-dynamic-card="1"])').forEach(card=>{
   const actions=card.querySelector('.actions'); if(!actions||actions.querySelector('.edit-supplier-btn'))return;
   const b=document.createElement('button'); b.type='button';b.className='edit-supplier-btn';b.textContent='Modifier';
-  const access=actions.querySelector('button');actions.insertBefore(b,access);b.addEventListener('click',()=>editLegacySupplier(card));const d=document.createElement('button');d.type='button';d.className='delete-supplier-btn';d.textContent='Supprimer';actions.insertBefore(d,access);d.addEventListener('click',()=>deleteLegacySupplier(card));
+  const access=actions.querySelector('button');actions.insertBefore(b,access);b.addEventListener('click',()=>editLegacySupplier(card));
  });
 }
 function legacyMap(){try{return JSON.parse(localStorage.getItem('netstore_legacy_migrated_v1')||'{}')}catch{return {}}}
@@ -672,8 +699,8 @@ async function loadDynamicSuppliers(){
     card.className="card";
     card.dataset.name=String(x.name||"").toLowerCase();
     card.dataset.dynamicCard="1";
-    card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button class="edit-supplier-btn" type="button">Modifier</button><button class="delete-supplier-btn" type="button">Supprimer</button><button class="access-supplier-btn" type="button">Accès</button></div>`;
-    card.querySelector(".edit-supplier-btn").addEventListener("click",()=>editSupplier(x.id));card.querySelector(".delete-supplier-btn").addEventListener("click",()=>deleteSupplier(x.id,x.name));
+    card.innerHTML=`<div class="supplier-head"><div class="logo-box"><img src="${img}" alt="${name}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span>${init}</span></div><div style="min-width:0"><div class="supplier-name">${name}</div><div class="dynamic-badge">Ajouté depuis NetStore</div></div></div><div class="actions"><a href="${url}" target="_blank" rel="noopener">Ouvrir</a><button class="edit-supplier-btn" type="button">Modifier</button><button class="access-supplier-btn" type="button">Accès</button></div>`;
+    card.querySelector(".edit-supplier-btn").addEventListener("click",()=>editSupplier(x.id));
     card.querySelector(".access-supplier-btn").addEventListener("click",()=>showDynamicCredentials(x.id));
     grid.appendChild(card);
    });
