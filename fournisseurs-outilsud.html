@@ -1081,7 +1081,7 @@ supplierImportInput.addEventListener("change",e=>{
     const tel=[c.tel>=0?r[c.tel]:"",c.gsm>=0?r[c.gsm]:""].map(v=>String(v||"").trim()).filter(Boolean).join(" / ");
     const emails=c.email>=0?String(r[c.email]||"").split(/[;,\s]+/).map(v=>v.trim()).filter(v=>v.includes("@")):[];
     const contact=c.contact>=0?String(r[c.contact]||"").trim():"";
-    return {nom,nom_actuel:nom,tva:c.tva>=0?String(r[c.tva]||"").trim():"",pays:(c.iso>=0?String(r[c.iso]||"").trim():"")||(c.pays>=0?String(r[c.pays]||"").trim():""),adresse:adr,code_postal:c.cp>=0?String(r[c.cp]||"").trim():"",ville:c.ville>=0?String(r[c.ville]||"").trim():"",telephone:tel,email:emails[0]||"",email1:emails[1]||"",email2:emails[2]||"",email3:emails[3]||"",email4:emails[4]||"",email5:emails[5]||"",email6:emails[6]||"",email7:emails[7]||"",note:[fid?"MERCATOR_F_ID="+fid:"",contact?"Contact Mercator: "+contact:""].filter(Boolean).join(" | "),statut:"Actif",statut_source:"Présence trouvée",categories:[]};
+    return {mercator_f_id:fid,contact,nom,nom_actuel:nom,tva:c.tva>=0?String(r[c.tva]||"").trim():"",pays:(c.iso>=0?String(r[c.iso]||"").trim():"")||(c.pays>=0?String(r[c.pays]||"").trim():""),adresse:adr,code_postal:c.cp>=0?String(r[c.cp]||"").trim():"",ville:c.ville>=0?String(r[c.ville]||"").trim():"",telephone:tel,email:emails[0]||"",email1:emails[1]||"",email2:emails[2]||"",email3:emails[3]||"",email4:emails[4]||"",email5:emails[5]||"",email6:emails[6]||"",email7:emails[7]||"",note:[fid?"MERCATOR_F_ID="+fid:"",contact?"Contact Mercator: "+contact:""].filter(Boolean).join(" | "),statut:"Actif",statut_source:"Présence trouvée",categories:[]};
    });
    if(!fournisseurs.length)throw new Error("Aucun fournisseur Mercator à importer.");
    if(!confirm("Import Mercator Outilsud\n\n"+fournisseurs.length+" fournisseur(s) seront synchronisés dans outilsud-db.\nLe F_ID Mercator sera conservé pour relier automatiquement les articles.\n\nContinuer ?"))return;
@@ -1090,7 +1090,7 @@ supplierImportInput.addEventListener("change",e=>{
    let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;const batchSize=50;
    for(let start=0;start<fournisseurs.length;start+=batchSize){
     const lot=fournisseurs.slice(start,start+batchSize);
-    const response=await fetch(API_BASE+"/admin/fournisseurs/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({fournisseurs:lot})});
+    const response=await fetch(API_BASE+"/admin/outilsud/fournisseurs/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({fournisseurs:lot})});
     const result=await response.json().catch(()=>({}));if(!response.ok||!result.ok)throw new Error(result.erreur||("Erreur HTTP "+response.status));
     recus+=Number(result.recus||0);ajoutes+=Number(result.ajoutes||0);modifies+=Number(result.modifies||0);inchanges+=Number(result.inchanges||0);ignores+=Number(result.ignores||0);
    }
@@ -1312,415 +1312,40 @@ async function importArticleBatchWithRetry(fournisseurId,articles,password,suppl
 globalArticleImportInput.addEventListener("change",e=>{
  const file=e.target.files[0];
  if(!file)return;
-
  readExcelFile(file,async a=>{
   const oldText=globalArticleImportBtn.textContent;
   try{
    if(a.length<2)throw new Error("Le fichier ne contient aucun article.");
-
-   const h=a[0].map(normHeader);
-   const find=(...names)=>{
-    for(const z of names){
-     const i=h.indexOf(normHeader(z));
-     if(i>=0)return i;
+   const h=a[0].map(normHeader), find=(...names)=>{for(const z of names){const i=h.indexOf(normHeader(z));if(i>=0)return i}return -1};
+   const c={sid:find("S_ID"),fid:find("ID_FOU"),ref:find("REF_FOU"),designation:find("S_MODELE"),ean:find("S_CLE2"),dpa:find("S_DPA"),ht:find("S_PRIX_HT"),prix:find("PRIX"),remise:find("REMISE"),principal:find("PRINCIPAL"),dispo:find("DISPO"),stockmin:find("STOCKMIN","S_STOCKMIN"),stockmax:find("STOCKMAX","S_STOCKMAX")};
+   if(c.sid<0||c.fid<0||c.ht<0)throw new Error("Export Mercator Outilsud invalide : S_ID, ID_FOU ou S_PRIX_HT introuvable.");
+   const articles=a.slice(1).map(r=>({
+    mercator_s_id:String(r[c.sid]??"").trim(), mercator_id_fou:String(r[c.fid]??"").trim(),
+    num_fournisseur:c.ref>=0?String(r[c.ref]??"").trim():"", denomination:c.designation>=0?String(r[c.designation]??"").trim():"",
+    ean:c.ean>=0?String(r[c.ean]??"").trim():"", prix_achat_htva:c.dpa>=0?parsePriceValue(r[c.dpa]):0,
+    prix_vente_htva:parsePriceValue(r[c.ht]), prix_brut_achat:c.prix>=0?parsePriceValue(r[c.prix]):0,
+    remise_achat:c.remise>=0?parsePriceValue(r[c.remise]):0, principal:c.principal>=0?Number(parsePriceValue(r[c.principal])||0):0,
+    dispo:c.dispo>=0?parsePriceValue(r[c.dispo]):0, stockmin:c.stockmin>=0?parsePriceValue(r[c.stockmin]):0, stockmax:c.stockmax>=0?parsePriceValue(r[c.stockmax]):0
+   })).filter(x=>x.mercator_s_id&&x.mercator_id_fou);
+   if(!articles.length)throw new Error("Aucun article Mercator exploitable.");
+   if(!confirm("Import Mercator Outilsud\n\n"+articles.length+" article(s) seront synchronisés dans outilsud-db.\nS_ID est l'identifiant stable et ID_FOU est relié au F_ID fournisseur.\nLe prix TVAC sera calculé automatiquement à 21 %.\n\nContinuer ?"))return;
+   const password=prompt("Mot de passe administrateur pour importer les articles Mercator dans Outilsud :");
+   if(password===null)return;if(!password)throw new Error("Mot de passe administrateur requis.");
+   globalArticleImportBtn.disabled=true;let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;const batchSize=50;
+   for(let start=0;start<articles.length;start+=batchSize){
+    const lot=articles.slice(start,start+batchSize);globalArticleImportBtn.textContent="Import Mercator… "+Math.min(start+lot.length,articles.length)+" / "+articles.length;
+    let result=null,lastErr=null;
+    for(let attempt=1;attempt<=5;attempt++){
+     try{const r=await fetch(API_BASE+"/admin/outilsud/articles/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({articles:lot})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.erreur||("HTTP "+r.status));result=j;break}catch(err){lastErr=err;if(attempt<5)await new Promise(res=>setTimeout(res,Math.min(12000,1200*Math.pow(2,attempt-1))))}
     }
-    return -1;
-   };
-
-   const cols={
-    numero_article:find("S_ID","N° d'article","S_CLE1"),
-    cle1:find("S_CLE1"),cle3:find("S_CLE3"),
-    num_fournisseur:find("REF_FOU","Num fournisseur","Ref fournisseur"),
-    id_fournisseur:find("ID_FOU"),
-    nom_fournisseur:find("Nomfour","Fournisseur"),
-    denomination:find("S_MODELE","Dénomination","Description FR"),
-    ean:find("S_CLE2","Code EAN"),
-    prix_achat_htva:find("S_DPA","Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
-    prix_vente_htva:find("S_PRIX_HT","Prix 1","Prix de vente HTVA"),
-    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC"),
-    prix_brut:find("PRIX"),remise:find("REMISE"),principal:find("PRINCIPAL"),dispo:find("DISPO"),stockmin:find("STOCKMIN","S_STOCKMIN"),stockmax:find("STOCKMAX","S_STOCKMAX")
-   };
-   const isMercator=cols.id_fournisseur>=0&&find("S_ID")>=0&&find("S_PRIX_HT")>=0;
-   if(cols.numero_article<0)throw new Error("Colonne S_ID / N° d'article introuvable.");
-   if(isMercator&&cols.id_fournisseur<0)throw new Error("Colonne ID_FOU Mercator introuvable.");
-   if(!isMercator&&cols.nom_fournisseur<0)throw new Error("Colonne fournisseur introuvable.");
-   if(!DATA.length)await loadSuppliersFromD1();
-
-   const mercatorSupplierMap=new Map();
-   for(const d of DATA){const m=String(d.note||"").match(/(?:^|\|\s*)MERCATOR_F_ID=([^|]+)/i);if(m)mercatorSupplierMap.set(String(m[1]).trim(),d);}
-   const matchSupplier=buildSmartSupplierMatcher(DATA);
-   const groups=new Map(),unknown=new Map(),pendingUnknown=[];let validRows=0;
-   for(const r of a.slice(1)){
-    const numero=String(r[cols.numero_article]??"").trim();if(!numero)continue;validRows++;
-    const mercatorFid=isMercator?String(r[cols.id_fournisseur]??"").trim():"";
-    const supplierName=!isMercator&&cols.nom_fournisseur>=0?String(r[cols.nom_fournisseur]??"").trim():"";
-    const ht=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
-    const o={numero_article:numero,num_fournisseur:cols.num_fournisseur>=0?String(r[cols.num_fournisseur]??"").trim():"",nom_fournisseur:supplierName,denomination:cols.denomination>=0?String(r[cols.denomination]??"").trim():"",ean:cols.ean>=0?String(r[cols.ean]??"").trim():"",unite:"",emballage:"",groupe_principal:"",sous_groupe:"",prix_achat_htva:cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0,prix_vente_htva:ht,prix_vente_tvac:Math.round((ht*1.21+Number.EPSILON)*100)/100};
-    let supplier=null;
-    if(isMercator){
-     const d=mercatorSupplierMap.get(mercatorFid);if(d)supplier={id:Number(d._d1_id),name:supplierDisplayName(d)};
-     if(!supplier){unknown.set(mercatorFid,(unknown.get(mercatorFid)||0)+1);pendingUnknown.push({supplierName:"F_ID "+mercatorFid,article:o});continue;}
-     o.nom_fournisseur=supplier.name;
-    }else supplier=matchSupplier(supplierName);
-    if(!supplier){unknown.set(supplierName,(unknown.get(supplierName)||0)+1);pendingUnknown.push({supplierName,article:o});continue;}
-    if(!groups.has(supplier.id))groups.set(supplier.id,{name:supplier.name,articles:[]});groups.get(supplier.id).articles.push(o);
+    if(!result)throw lastErr||new Error("Échec d'import.");
+    recus+=Number(result.recus||0);ajoutes+=Number(result.ajoutes||0);modifies+=Number(result.modifies||0);inchanges+=Number(result.inchanges||0);ignores+=Number(result.ignores||0);
    }
-   if(isMercator&&unknown.size){
-    const missing=[...unknown.entries()].slice(0,15).map(([id,n])=>"F_ID "+id+" ("+n+" article(s))").join("\n");
-    throw new Error("Certains ID_FOU Mercator ne correspondent à aucun fournisseur importé dans Outilsud. Importe d'abord export-fournisseurs-outilsud.xlsx.\n\n"+missing+(unknown.size>15?"\n…":""));
-   }
-   // Tous les articles dont le champ fournisseur est vide sont automatiquement
-   // rattachés à un fournisseur Cloudflare unique nommé « Sans fournisseur ».
-   const blankSupplierItems=pendingUnknown.filter(x=>!String(x.supplierName||"").trim());
-   if(blankSupplierItems.length){
-    let sf=DATA.find(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity("Sans fournisseur")||supplierIdentity(x.nom_actuel)===supplierIdentity("Sans fournisseur"));
-    if(sf){
-     const id=Number(sf._d1_id);
-     if(!groups.has(id))groups.set(id,{name:supplierDisplayName(sf),articles:[]});
-     for(const item of blankSupplierItems)groups.get(id).articles.push(item.article);
-     unknown.delete("");
-     for(let i=pendingUnknown.length-1;i>=0;i--)if(!String(pendingUnknown[i].supplierName||"").trim())pendingUnknown.splice(i,1);
-    }
-   }
-
-   let createNames=new Set();
-   if(blankSupplierItems.length&&!DATA.some(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity("Sans fournisseur")||supplierIdentity(x.nom_actuel)===supplierIdentity("Sans fournisseur"))){
-    createNames.add("Sans fournisseur");
-    for(const item of blankSupplierItems)item.supplierName="Sans fournisseur";
-    unknown.delete("");
-   }
-   if(unknown.size){
-    const manualChoice=await chooseUnknownSupplierMappings(unknown);
-    if(manualChoice===null)return;
-    const manualMap=manualChoice.map;createNames=new Set([...createNames,...manualChoice.createNames]);
-    for(const item of pendingUnknown){
-     const id=manualMap.get(item.supplierName);if(!id)continue;
-     const d=DATA.find(x=>Number(x._d1_id)===id);
-     const name=d?(d.fournisseur_source||d.nom_actuel||("Fournisseur "+id)):("Fournisseur "+id);
-     if(!groups.has(id))groups.set(id,{name,articles:[]});
-     groups.get(id).articles.push(item.article);
-    }
-   }
-
-   const preMatched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
-   const createArticleCount=pendingUnknown.filter(x=>createNames.has(x.supplierName)).length;
-   if(!groups.size&&!createNames.size)throw new Error("Aucun fournisseur du fichier ne correspond aux fournisseurs présents dans Cloudflare D1.");
-   const ignored=validRows-preMatched-createArticleCount;
-   let warning=ignored?"\n\n"+ignored+" article(s) restent volontairement ignoré(s) car aucune correspondance n'a été validée.":"";
-   if(createNames.size)warning+="\n\n"+createNames.size+" nouveau(x) fournisseur(s) seront créés automatiquement ("+createArticleCount+" article(s)).";
-
-   if(!confirm(
-    "Mise à jour globale des articles\n\n"+
-    validRows+" article(s) lu(s)\n"+
-    (preMatched+createArticleCount)+" article(s) rattaché(s) à "+(groups.size+createNames.size)+" fournisseur(s) Cloudflare (existants + à créer)."+
-    warning+
-    "\n\nLes articles existants seront mis à jour/considérés inchangés et les nouveaux seront ajoutés.\n\nContinuer ?"
-   ))return;
-
-   const password=prompt("Mot de passe administrateur pour mettre à jour toute la base articles Cloudflare D1 :");
-   if(password===null)return;
-   if(!password)throw new Error("Mot de passe administrateur requis.");
-
-   if(createNames.size){
-    globalArticleImportBtn.disabled=true;globalArticleImportBtn.textContent="Création des fournisseurs…";
-    const nouveaux=[...createNames].map(nom=>({nom,nom_actuel:nom,statut:"À vérifier",statut_source:"À vérifier",type_inactif:"",tva:"",pays:"",adresse:"",existence:"",source:"",note:"Créé automatiquement lors de l’import global des articles",categories:[]}));
-    const supplierBatchSize=50;
-    for(let start=0;start<nouveaux.length;start+=supplierBatchSize){
-     const lot=nouveaux.slice(start,start+supplierBatchSize);
-     const numero=Math.floor(start/supplierBatchSize)+1;
-     const totalLots=Math.ceil(nouveaux.length/supplierBatchSize);
-     globalArticleImportBtn.textContent="Création fournisseurs… "+numero+"/"+totalLots;
-     const cr=await fetch(API_BASE+"/admin/fournisseurs/import",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Admin-Password":password},
-      body:JSON.stringify({fournisseurs:lot})
-     });
-     const cj=await cr.json().catch(()=>({}));
-     if(!cr.ok||!cj.ok)throw new Error(cj.erreur||("Création fournisseurs impossible — lot "+numero+"/"+totalLots+" — HTTP "+cr.status));
-    }
-    await loadSuppliersFromD1();const aliases=loadSupplierAliases();
-    for(const source of createNames){
-     const exact=DATA.find(x=>supplierIdentity(x.fournisseur_source)===supplierIdentity(source)||supplierIdentity(x.nom_actuel)===supplierIdentity(source));
-     if(!exact)throw new Error("Le fournisseur « "+source+" » a été créé mais n’a pas pu être retrouvé dans Cloudflare.");
-     const id=Number(exact._d1_id);aliases[supplierAliasKey(source)]=id;
-     for(const item of pendingUnknown){if(item.supplierName!==source)continue;if(!groups.has(id))groups.set(id,{name:supplierDisplayName(exact),articles:[]});groups.get(id).articles.push(item.article)}
-    }
-    saveSupplierAliases(aliases);
-   }
-
-   const matched=[...groups.values()].reduce((s,g)=>s+g.articles.length,0);
-   globalArticleImportBtn.disabled=true;
-
-   let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;
-   let done=0;
-   const entries=[...groups.entries()];
-   const total=matched;
-   const batchSize=50;
-   const failedBatches=[];
-
-   const addImportResult=result=>{
-    recus+=Number(result.recus||0);
-    ajoutes+=Number(result.ajoutes||0);
-    modifies+=Number(result.modifies||0);
-    inchanges+=Number(result.inchanges||0);
-    ignores+=Number(result.ignores||0);
-   };
-
-   // Premier passage : un lot qui reste en erreur après les tentatives
-   // est mémorisé, mais ne bloque plus les fournisseurs suivants.
-   for(let gi=0;gi<entries.length;gi++){
-    const [fournisseurId,group]=entries[gi];
-
-    for(let pos=0;pos<group.articles.length;pos+=batchSize){
-     const lot=group.articles.slice(pos,pos+batchSize);
-     globalArticleImportBtn.textContent="Mise à jour… "+Math.min(done+lot.length,total)+" / "+total;
-
-     try{
-      const result=await importArticleBatchWithRetry(
-       fournisseurId,
-       lot,
-       password,
-       group.name,
-       (attempt,maxAttempts,delay)=>{
-        globalArticleImportBtn.textContent=
-         "Connexion interrompue — nouvelle tentative "+attempt+"/"+maxAttempts+
-         " dans "+Math.round(delay/1000)+" s… "+done+" / "+total;
-       }
-      );
-      addImportResult(result);
-     }catch(err){
-      console.warn("Lot article reporté :",group.name,pos,err);
-      failedBatches.push({
-       fournisseurId,
-       supplierName:group.name,
-       articles:lot,
-       start:pos,
-       error:String(err&&err.message||err)
-      });
-     }
-
-     done+=lot.length;
-    }
-   }
-
-   // Deuxième passage : on réessaie uniquement les lots qui ont échoué.
-   const finalFailures=[];
-   if(failedBatches.length){
-    for(let i=0;i<failedBatches.length;i++){
-     const failed=failedBatches[i];
-     globalArticleImportBtn.textContent=
-      "Nouvelle tentative des échecs… "+(i+1)+" / "+failedBatches.length+
-      " — "+failed.supplierName;
-
-     try{
-      const result=await importArticleBatchWithRetry(
-       failed.fournisseurId,
-       failed.articles,
-       password,
-       failed.supplierName,
-       (attempt,maxAttempts,delay)=>{
-        globalArticleImportBtn.textContent=
-         "Nouvelle tentative "+attempt+"/"+maxAttempts+
-         " dans "+Math.round(delay/1000)+" s… — "+failed.supplierName;
-       }
-      );
-      addImportResult(result);
-     }catch(err){
-      console.error("Lot article définitivement en échec :",failed.supplierName,failed.start,err);
-      finalFailures.push({...failed,error:String(err&&err.message||err)});
-     }
-    }
-   }
-
    await loadD1Data();
-
-   let finalMessage=
-    (finalFailures.length?"Mise à jour terminée avec quelques échecs.":"Mise à jour globale terminée.")+"\n\n"+
-    recus+" ligne(s) traitée(s)\n"+
-    ajoutes+" article(s) ajouté(s)\n"+
-    modifies+" article(s) modifié(s)\n"+
-    inchanges+" article(s) inchangé(s)\n"+
-    ignores+" ligne(s) ignorée(s)";
-
-   if(failedBatches.length){
-    finalMessage+="\n\n"+failedBatches.length+" lot(s) ont rencontré une erreur temporaire et ont été retentés à la fin.";
-   }
-
-   if(finalFailures.length){
-    const failedArticles=finalFailures.reduce((sum,x)=>sum+x.articles.length,0);
-    const failedNames=[...new Set(finalFailures.map(x=>x.supplierName))];
-    finalMessage+="\n\n⚠ "+failedArticles+" article(s) restent à réessayer chez "+
-     failedNames.length+" fournisseur(s) :\n"+failedNames.slice(0,12).join(", ");
-    if(failedNames.length>12)finalMessage+="…";
-    finalMessage+="\n\nTous les autres fournisseurs ont quand même été traités.";
-   }
-
-   if(ignored){
-    finalMessage+="\n\n"+ignored+" article(s) volontairement non importé(s), faute de correspondance fournisseur validée.";
-   }
-   alert(finalMessage);
-
-  }catch(err){
-   console.error(err);
-   alert("Mise à jour globale impossible : "+err.message);
-  }finally{
-   globalArticleImportBtn.disabled=false;
-   globalArticleImportBtn.textContent=oldText;
-   e.target.value="";
-  }
+   alert("Import articles Mercator terminé.\n\n"+recus+" ligne(s) traitée(s)\n"+inchanges+" inchangée(s)\n"+modifies+" modifiée(s)\n"+ajoutes+" ajoutée(s)\n"+ignores+" ignorée(s)");
+  }catch(err){console.error(err);alert("Import articles impossible : "+err.message)}
+  finally{globalArticleImportBtn.disabled=false;globalArticleImportBtn.textContent=oldText;globalArticleImportInput.value=""}
  });
-});
-
-articleImportInput.addEventListener("change",e=>{
- const file=e.target.files[0];
- if(!file||currentArticleSupplier<0)return;
-
- readExcelFile(file,async a=>{
-  try{
-   if(a.length<2){
-    alert("Le fichier ne contient aucun article.");
-    return;
-   }
-
-   const h=a[0].map(normHeader);
-   const find=(...names)=>{
-    for(const z of names){
-     const i=h.indexOf(normHeader(z));
-     if(i>=0)return i;
-    }
-    return -1;
-   };
-
-   const cols={
-    numero_article:find("N° d'article","S_CLE1"),
-    num_fournisseur:find("Num fournisseur","REF_FOU","Ref fournisseur"),
-    nom_fournisseur:find("Nomfour"),
-    denomination:find("Dénomination","Description FR","S_MODELE"),
-    unite:find("Unité"),
-    emballage:find("Emballage"),
-    groupe_principal:find("Groupe principal"),
-    sous_groupe:find("Sous-groupe"),
-    ean:find("Code EAN","S_CLE2"),
-    prix_achat_htva:find("Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
-    prix_vente_htva:find("Prix 1","Prix de vente HTVA","S_PRIX_HT"),
-    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC")
-   };
-
-   if(cols.numero_article<0){
-    alert("La colonne N° d'article est obligatoire pour l'import D1.");
-    return;
-   }
-
-   const articles=a.slice(1)
-    .filter(r=>String(r[cols.numero_article]??"").trim())
-    .map(r=>{
-      const o={numero_article:String(r[cols.numero_article]??"").trim()};
-      for(const key of ["num_fournisseur","nom_fournisseur","denomination","unite","emballage","groupe_principal","sous_groupe","ean"]){
-       const i=cols[key];
-       if(i>=0)o[key]=String(r[i]??"").trim();
-      }
-      o.prix_achat_htva=cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0;
-      o.prix_vente_htva=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
-      o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):Math.round((o.prix_vente_htva*1.21+Number.EPSILON)*100)/100;
-      return o;
-    });
-
-   if(!articles.length){
-    alert("Aucun article à importer.");
-    return;
-   }
-
-   const fournisseurId=Number(DATA[currentArticleSupplier]._d1_id);
-   if(!Number.isInteger(fournisseurId)||fournisseurId<=0){
-    alert("Identifiant Cloudflare D1 du fournisseur introuvable.");
-    return;
-   }
-
-   const password=prompt(
-    "Mot de passe administrateur pour importer les articles de "+
-    DATA[currentArticleSupplier].fournisseur_source+" dans Cloudflare D1 :"
-   );
-   if(password===null)return;
-   if(!password){
-    alert("Mot de passe administrateur requis.");
-    return;
-   }
-
-   let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;
-   const batchSize=100;
-
-   for(let pos=0;pos<articles.length;pos+=batchSize){
-    const lot=articles.slice(pos,pos+batchSize);
-
-    const response=await fetch(API_BASE+"/admin/articles/import",{
-     method:"POST",
-     headers:{
-      "Content-Type":"application/json",
-      "X-Admin-Password":password
-     },
-     body:JSON.stringify({
-      fournisseur_id:fournisseurId,
-      articles:lot
-     })
-    });
-
-    const result=await response.json().catch(()=>({}));
-
-    if(!response.ok||!result.ok){
-     throw new Error(result.erreur||("Erreur HTTP "+response.status));
-    }
-
-    recus+=Number(result.recus||0);
-    ajoutes+=Number(result.ajoutes||0);
-    modifies+=Number(result.modifies||0);
-    inchanges+=Number(result.inchanges||0);
-    ignores+=Number(result.ignores||0);
-   }
-
-   // Recharge la fiche Articles depuis D1 après l'import.
-   const refresh=await fetch(API_BASE+"/articles?fournisseur_id="+encodeURIComponent(fournisseurId));
-   const fresh=await refresh.json();
-
-   if(refresh.ok&&fresh.ok&&Array.isArray(fresh.articles)){
-    currentArticleRows=fresh.articles.map(x=>[
-     x.numero_article||"",
-     x.num_fournisseur||"",
-     x.nom_fournisseur||"",
-     "",
-     x.denomination||"",
-     x.unite||"",
-     x.emballage||"",
-     x.groupe_principal||"",
-     x.sous_groupe||"",
-     x.ean||"",
-     Number(x.prix_achat_htva??0)||0,
-     Number(x.prix_vente_htva??0)||0,
-     Number(x.prix_vente_tvac??0)||0
-    ]);
-    ARTICLES[String(currentArticleSupplier)]=currentArticleRows.slice();
-    DATA[currentArticleSupplier].nb_articles_excel=currentArticleRows.length;
-    DATA[currentArticleSupplier]._d1_nb_articles=currentArticleRows.length;
-    rebuildProductSearchUnits();
-    renderArticles();
-    render();
-   }
-
-   alert(
-    "Import articles terminé dans Cloudflare D1.\n\n"+
-    recus+" ligne(s) traitée(s)\n"+
-    inchanges+" article(s) inchangé(s)\n"+
-    modifies+" article(s) modifié(s)\n"+
-    ajoutes+" article(s) ajouté(s)\n"+
-    ignores+" ligne(s) ignorée(s)"
-   );
-
-  }catch(err){
-   console.error(err);
-   alert("Import articles impossible : "+err.message);
-  }
- });
-
- e.target.value="";
 });
 
 
