@@ -142,7 +142,16 @@ async function handleScannedCode(raw){
   const exact=catalog.find(a=>norm(a.ean)===norm(raw))
     ||catalog.find(a=>norm(a.numero_article)===norm(raw))
     ||catalog.find(a=>norm(a.num_fournisseur)===norm(raw));
-  if(exact){showScanQuantity(exact);return}
+  if(exact){
+    const dejaPresent=cart.some(l=>String(l.article_id)===String(exact.id));
+    if(dejaPresent){
+      toast("Article déjà scanné — non ajouté.");
+      resumeScanner("Article déjà présent dans cette commande. Scannez le suivant.");
+      return;
+    }
+    showScanQuantity(exact);
+    return;
+  }
 
   $("scannerMsg").textContent="Article absent de ce fournisseur. Vérification…";
   try{
