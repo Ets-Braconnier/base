@@ -246,26 +246,16 @@ body{background:#f7f8fb!important}
 <div class="toast" id="toast"></div>
 <script>
 const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
-// Protection API : le mot de passe n'est jamais inscrit dans le fichier.
-// Il est demandé à l'utilisateur et conservé uniquement pour cet onglet/session.
-const API_ACCESS_PASSWORD_KEY="braconnier_api_access_password_v1";
-function apiAccessPassword(){
-  const p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
-  if(!p){
-    sessionStorage.removeItem("braconnier_portal_token_v3");
-    window.location.replace("index.html");
-    return "";
-  }
-  return p;
-}
+// Les accès normaux à l'API utilisent automatiquement la session du portail.
+// X-Admin-Password reste envoyé uniquement par les fonctions d'administration qui le demandent explicitement.
 const nativeFetchForPrivateApi=window.fetch.bind(window);
 window.fetch=function(input,init={}){
   const target=typeof input==="string"?input:(input&&input.url)||"";
   if(target.startsWith(API_BASE)){
     const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
-    if(!headers.has("X-Admin-Password")){
-      const p=apiAccessPassword();
-      if(p)headers.set("X-Admin-Password",p);
+    if(!headers.has("Authorization")){
+      const token=sessionStorage.getItem("braconnier_portal_token_v3")||"";
+      if(token)headers.set("Authorization","Bearer "+token);
     }
     init={...init,headers};
   }
