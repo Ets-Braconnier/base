@@ -1007,7 +1007,7 @@ async function exportSuppliersExcel(){
    const x=supplierFromD1(f),c=supplierContact(x)||{},emails=Array.isArray(c.emails)?c.emails:[];
    return [c.code||f.code||"",f.nom||"",f.nom_actuel||"",f.statut||"",f.type_inactif||"",f.tva||c.tva||"",f.pays||c.pays||"",c.adresse||f.adresse||"",c.cp||f.code_postal||"",c.ville||f.ville||"",c.tel||f.telephone||"",c.fax||f.fax||"",c.franco||f.franco||"",...Array.from({length:8},(_,i)=>emails[i]||f[emailFields[i]]||""),String(f.nb_articles??0),String(f.nb_categories??0),String(f.nb_tarifs??0),f.source||"",f.existence||"",f.note||""];
   });
-  downloadBlob(xlsxBlob(h,rows,"Fournisseurs"),"Base_fournisseurs_complete_Braconnier.xlsx");
+  downloadBlob(xlsxBlob(h,rows,"Fournisseurs"),"Base_fournisseurs_complete_Outilsud.xlsx");
  }catch(err){console.error(err);alert("Export fournisseurs impossible depuis Cloudflare D1 : "+err.message)}
 }
 
@@ -1033,7 +1033,7 @@ async function exportArticlesZip(){
    if(rows.length)files[`Articles_${safeFileName(f.nom||("Fournisseur_"+f.id))}.xlsx`]=await toBytes(xlsxBlob(h,rows,"Articles"));
   }
   if(!Object.keys(files).length){alert("Aucun article à exporter.");return}
-  downloadBlob(xZip(files,"application/zip"),"Base_articles_Braconnier.zip");
+  downloadBlob(xZip(files,"application/zip"),"Base_articles_Outilsud.zip");
  }catch(err){console.error(err);alert("Export de la base articles impossible depuis Cloudflare D1 : "+err.message)}
 }
 
@@ -1068,120 +1068,38 @@ supplierImportInput.addEventListener("change",e=>{
 
  readExcelFile(file,async a=>{
   try{
-   if(a.length<2){
-    alert("Le fichier ne contient aucune donnée.");
-    return;
-   }
-
+   if(a.length<2)throw new Error("Le fichier ne contient aucune donnée.");
    const h=a[0].map(normHeader);
    const idx=name=>h.indexOf(normHeader(name));
-   const req=idx("Fournisseur");
+   const isMercator=idx("F_ID")>=0&&idx("F_NOM")>=0;
+   if(!isMercator)throw new Error("Ce fichier ne ressemble pas à l'export fournisseurs Mercator Outilsud (F_ID / F_NOM introuvables).");
 
-   if(req<0){
-    alert("Ce fichier ne ressemble pas à l'export fournisseurs Braconnier.");
-    return;
-   }
-
-   const cols={
-     nom_actuel:idx("Nom actuel"),
-     tva:idx("N° TVA / entreprise"),
-     pays:idx("Pays"),
-     adresse:idx("Adresse"),
-     statut:idx("Statut"),
-     type_inactif:idx("Type inactif"),
-     note:idx("Note"),
-     categories:idx("Catégories")
-   };
-
-   const fournisseurs=a.slice(1)
-    .filter(r=>String(r[req]||"").trim())
-    .map(r=>{
-      const o={nom:String(r[req]||"").trim()};
-
-      for(const key of ["nom_actuel","tva","pays","adresse","statut","type_inactif","note"]){
-        const i=cols[key];
-        if(i>=0)o[key]=String(r[i]??"").trim();
-      }
-
-      if(cols.categories>=0){
-        o.categories=String(r[cols.categories]||"")
-          .split("|")
-          .map(v=>v.trim())
-          .filter(Boolean);
-      }
-
-      return o;
-    });
-
-   if(!fournisseurs.length){
-    alert("Aucun fournisseur à importer.");
-    return;
-   }
-
-   const password=prompt("Mot de passe administrateur pour importer dans Cloudflare D1 :");
-   if(password===null)return;
-
-   if(!password){
-    alert("Mot de passe administrateur requis.");
-    return;
-   }
-
-   let recus=0,ajoutes=0,modifies=0,inchangés=0,ignores=0;
-   let categoriesAjoutees=0,categoriesSupprimees=0;
-   const batchSize=50;
-
+   const c={id:idx("F_ID"),nom:idx("F_NOM"),contact:idx("F_CONTACT"),adresse:idx("F_ADRESSE"),adresse2:idx("F_ADRESSE2"),cp:idx("F_CODEP"),ville:idx("F_VILLE"),iso:idx("F_ISOPAYS"),pays:idx("F_PAYS"),tel:idx("F_NUM_TEL"),gsm:idx("F_NUM_GSM"),email:idx("F_EMAIL"),tva:idx("F_NUM_TVA")};
+   const fournisseurs=a.slice(1).filter(r=>String(r[c.nom]||"").trim()).map(r=>{
+    const fid=String(r[c.id]??"").trim(),nom=String(r[c.nom]??"").trim();
+    const adr=[c.adresse>=0?r[c.adresse]:"",c.adresse2>=0?r[c.adresse2]:""].map(v=>String(v||"").trim()).filter(Boolean).join(" — ");
+    const tel=[c.tel>=0?r[c.tel]:"",c.gsm>=0?r[c.gsm]:""].map(v=>String(v||"").trim()).filter(Boolean).join(" / ");
+    const emails=c.email>=0?String(r[c.email]||"").split(/[;,\s]+/).map(v=>v.trim()).filter(v=>v.includes("@")):[];
+    const contact=c.contact>=0?String(r[c.contact]||"").trim():"";
+    return {nom,nom_actuel:nom,tva:c.tva>=0?String(r[c.tva]||"").trim():"",pays:(c.iso>=0?String(r[c.iso]||"").trim():"")||(c.pays>=0?String(r[c.pays]||"").trim():""),adresse:adr,code_postal:c.cp>=0?String(r[c.cp]||"").trim():"",ville:c.ville>=0?String(r[c.ville]||"").trim():"",telephone:tel,email:emails[0]||"",email1:emails[1]||"",email2:emails[2]||"",email3:emails[3]||"",email4:emails[4]||"",email5:emails[5]||"",email6:emails[6]||"",email7:emails[7]||"",note:[fid?"MERCATOR_F_ID="+fid:"",contact?"Contact Mercator: "+contact:""].filter(Boolean).join(" | "),statut:"Actif",statut_source:"Présence trouvée",categories:[]};
+   });
+   if(!fournisseurs.length)throw new Error("Aucun fournisseur Mercator à importer.");
+   if(!confirm("Import Mercator Outilsud\n\n"+fournisseurs.length+" fournisseur(s) seront synchronisés dans outilsud-db.\nLe F_ID Mercator sera conservé pour relier automatiquement les articles.\n\nContinuer ?"))return;
+   const password=prompt("Mot de passe administrateur pour importer les fournisseurs Mercator dans Outilsud :");
+   if(password===null)return;if(!password)throw new Error("Mot de passe administrateur requis.");
+   let recus=0,ajoutes=0,modifies=0,inchanges=0,ignores=0;const batchSize=50;
    for(let start=0;start<fournisseurs.length;start+=batchSize){
     const lot=fournisseurs.slice(start,start+batchSize);
-
-    const response=await fetch(API_BASE+"/admin/fournisseurs/import",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "X-Admin-Password":password
-      },
-      body:JSON.stringify({fournisseurs:lot})
-    });
-
-    const result=await response.json().catch(()=>({}));
-
-    if(!response.ok||!result.ok){
-      throw new Error(result.erreur||("Erreur HTTP "+response.status));
-    }
-
-    recus+=Number(result.recus||0);
-    ajoutes+=Number(result.ajoutes||0);
-    modifies+=Number(result.modifies||0);
-    inchangés+=Number(result.inchanges||0);
-    ignores+=Number(result.ignores||0);
-    categoriesAjoutees+=Number(result.categories_ajoutees||0);
-    categoriesSupprimees+=Number(result.categories_supprimees||0);
+    const response=await fetch(API_BASE+"/admin/fournisseurs/import",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Password":password},body:JSON.stringify({fournisseurs:lot})});
+    const result=await response.json().catch(()=>({}));if(!response.ok||!result.ok)throw new Error(result.erreur||("Erreur HTTP "+response.status));
+    recus+=Number(result.recus||0);ajoutes+=Number(result.ajoutes||0);modifies+=Number(result.modifies||0);inchanges+=Number(result.inchanges||0);ignores+=Number(result.ignores||0);
    }
-
    await loadD1Data();
-
-   alert(
-     "Import terminé dans Cloudflare D1.\n\n"+
-     recus+" ligne(s) traitée(s)\n"+
-     inchangés+" fournisseur(s) inchangé(s)\n"+
-     modifies+" fournisseur(s) modifié(s)\n"+
-     ajoutes+" fournisseur(s) ajouté(s)\n"+
-     ignores+" ligne(s) ignorée(s)\n"+
-     categoriesAjoutees+" catégorie(s) ajoutée(s)\n"+
-     categoriesSupprimees+" catégorie(s) supprimée(s)"
-   );
-
-  }catch(err){
-   console.error(err);
-   alert("Import impossible : "+err.message);
-  }
+   alert("Import Mercator terminé.\n\n"+recus+" ligne(s) traitée(s)\n"+inchanges+" inchangée(s)\n"+modifies+" modifiée(s)\n"+ajoutes+" ajoutée(s)\n"+ignores+" ignorée(s)");
+  }catch(err){console.error(err);alert("Import impossible : "+err.message);}
+  finally{supplierImportInput.value="";}
  });
-
- e.target.value="";
 });
-
-
-const globalArticleImportInput=document.getElementById("globalArticleImportInput");
-const globalArticleImportBtn=document.getElementById("globalArticleImportBtn");
 
 function supplierIdentity(v){
  return n(String(v||"")).replace(/[^a-z0-9]+/g,"");
@@ -1410,56 +1328,47 @@ globalArticleImportInput.addEventListener("change",e=>{
    };
 
    const cols={
-    numero_article:find("N° d'article","S_CLE1"),
-    num_fournisseur:find("Num fournisseur","REF_FOU","Ref fournisseur"),
+    numero_article:find("S_ID","N° d'article","S_CLE1"),
+    cle1:find("S_CLE1"),cle3:find("S_CLE3"),
+    num_fournisseur:find("REF_FOU","Num fournisseur","Ref fournisseur"),
+    id_fournisseur:find("ID_FOU"),
     nom_fournisseur:find("Nomfour","Fournisseur"),
-    denomination:find("Dénomination","Description FR","S_MODELE"),
-    unite:find("Unité"),
-    emballage:find("Emballage"),
-    groupe_principal:find("Groupe principal"),
-    sous_groupe:find("Sous-groupe"),
-    ean:find("Code EAN","S_CLE2"),
-    prix_achat_htva:find("Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
-    prix_vente_htva:find("Prix 1","Prix de vente HTVA","S_PRIX_HT"),
-    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC")
+    denomination:find("S_MODELE","Dénomination","Description FR"),
+    ean:find("S_CLE2","Code EAN"),
+    prix_achat_htva:find("S_DPA","Prix d'achat HTVA","Prix achat HTVA","Prix de revient","PRIX ACHAT"),
+    prix_vente_htva:find("S_PRIX_HT","Prix 1","Prix de vente HTVA"),
+    prix_vente_tvac:find("Incl. Prix 1","Prix de vente TVAC","Prix TVAC"),
+    prix_brut:find("PRIX"),remise:find("REMISE"),principal:find("PRINCIPAL"),dispo:find("DISPO"),stockmin:find("STOCKMIN","S_STOCKMIN"),stockmax:find("STOCKMAX","S_STOCKMAX")
    };
-
-   if(cols.numero_article<0)throw new Error("Colonne N° d'article introuvable.");
-   if(cols.nom_fournisseur<0)throw new Error("Colonne Nomfour introuvable : elle est nécessaire pour répartir les articles.");
-
+   const isMercator=cols.id_fournisseur>=0&&find("S_ID")>=0&&find("S_PRIX_HT")>=0;
+   if(cols.numero_article<0)throw new Error("Colonne S_ID / N° d'article introuvable.");
+   if(isMercator&&cols.id_fournisseur<0)throw new Error("Colonne ID_FOU Mercator introuvable.");
+   if(!isMercator&&cols.nom_fournisseur<0)throw new Error("Colonne fournisseur introuvable.");
    if(!DATA.length)await loadSuppliersFromD1();
 
+   const mercatorSupplierMap=new Map();
+   for(const d of DATA){const m=String(d.note||"").match(/(?:^|\|\s*)MERCATOR_F_ID=([^|]+)/i);if(m)mercatorSupplierMap.set(String(m[1]).trim(),d);}
    const matchSupplier=buildSmartSupplierMatcher(DATA);
-
-   const groups=new Map(),unknown=new Map(),pendingUnknown=[];
-   let validRows=0;
+   const groups=new Map(),unknown=new Map(),pendingUnknown=[];let validRows=0;
    for(const r of a.slice(1)){
-    const numero=String(r[cols.numero_article]??"").trim();
-    if(!numero)continue;
-    validRows++;
-
-    const supplierName=String(r[cols.nom_fournisseur]??"").trim();
-    const o={numero_article:numero};
-    for(const key of ["num_fournisseur","nom_fournisseur","denomination","unite","emballage","groupe_principal","sous_groupe","ean"]){
-     const i=cols[key];
-     if(i>=0)o[key]=String(r[i]??"").trim();
-    }
-    o.prix_achat_htva=cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0;
-    o.prix_vente_htva=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
-    o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):0;
-    const aliases=loadSupplierAliases();
-    const rememberedId=aliases[supplierAliasKey(supplierName)];
-    const remembered=rememberedId?supplierById(rememberedId):null;
-    const supplier=remembered?{id:Number(remembered._d1_id),name:supplierDisplayName(remembered)}:matchSupplier(supplierName);
-    if(!supplier){
-     unknown.set(supplierName,(unknown.get(supplierName)||0)+1);
-     pendingUnknown.push({supplierName,article:o});
-     continue;
-    }
-    if(!groups.has(supplier.id))groups.set(supplier.id,{name:supplier.name,articles:[]});
-    groups.get(supplier.id).articles.push(o);
+    const numero=String(r[cols.numero_article]??"").trim();if(!numero)continue;validRows++;
+    const mercatorFid=isMercator?String(r[cols.id_fournisseur]??"").trim():"";
+    const supplierName=!isMercator&&cols.nom_fournisseur>=0?String(r[cols.nom_fournisseur]??"").trim():"";
+    const ht=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
+    const o={numero_article:numero,num_fournisseur:cols.num_fournisseur>=0?String(r[cols.num_fournisseur]??"").trim():"",nom_fournisseur:supplierName,denomination:cols.denomination>=0?String(r[cols.denomination]??"").trim():"",ean:cols.ean>=0?String(r[cols.ean]??"").trim():"",unite:"",emballage:"",groupe_principal:"",sous_groupe:"",prix_achat_htva:cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0,prix_vente_htva:ht,prix_vente_tvac:Math.round((ht*1.21+Number.EPSILON)*100)/100};
+    let supplier=null;
+    if(isMercator){
+     const d=mercatorSupplierMap.get(mercatorFid);if(d)supplier={id:Number(d._d1_id),name:supplierDisplayName(d)};
+     if(!supplier){unknown.set(mercatorFid,(unknown.get(mercatorFid)||0)+1);pendingUnknown.push({supplierName:"F_ID "+mercatorFid,article:o});continue;}
+     o.nom_fournisseur=supplier.name;
+    }else supplier=matchSupplier(supplierName);
+    if(!supplier){unknown.set(supplierName,(unknown.get(supplierName)||0)+1);pendingUnknown.push({supplierName,article:o});continue;}
+    if(!groups.has(supplier.id))groups.set(supplier.id,{name:supplier.name,articles:[]});groups.get(supplier.id).articles.push(o);
    }
-
+   if(isMercator&&unknown.size){
+    const missing=[...unknown.entries()].slice(0,15).map(([id,n])=>"F_ID "+id+" ("+n+" article(s))").join("\n");
+    throw new Error("Certains ID_FOU Mercator ne correspondent à aucun fournisseur importé dans Outilsud. Importe d'abord export-fournisseurs-outilsud.xlsx.\n\n"+missing+(unknown.size>15?"\n…":""));
+   }
    // Tous les articles dont le champ fournisseur est vide sont automatiquement
    // rattachés à un fournisseur Cloudflare unique nommé « Sans fournisseur ».
    const blankSupplierItems=pendingUnknown.filter(x=>!String(x.supplierName||"").trim());
@@ -1712,7 +1621,7 @@ articleImportInput.addEventListener("change",e=>{
       }
       o.prix_achat_htva=cols.prix_achat_htva>=0?parsePriceValue(r[cols.prix_achat_htva]):0;
       o.prix_vente_htva=cols.prix_vente_htva>=0?parsePriceValue(r[cols.prix_vente_htva]):0;
-      o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):0;
+      o.prix_vente_tvac=cols.prix_vente_tvac>=0?parsePriceValue(r[cols.prix_vente_tvac]):Math.round((o.prix_vente_htva*1.21+Number.EPSILON)*100)/100;
       return o;
     });
 
