@@ -2054,18 +2054,19 @@ const API_BASE="https://braconnier-api.sebastien-025.workers.dev";
 // Il est demandé à l'utilisateur et conservé uniquement pour cet onglet/session.
 const API_ACCESS_PASSWORD_KEY="braconnier_api_access_password_v1";
 function apiAccessPassword(){
-  const p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
+  let p=sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)||"";
   if(!p){
-    sessionStorage.removeItem("braconnier_portal_token_v3");
-    window.location.replace("index.html");
-    return "";
+    p=prompt("Mot de passe administrateur pour accéder à la base fournisseurs :")||"";
+    if(p)sessionStorage.setItem(API_ACCESS_PASSWORD_KEY,p);
   }
   return p;
 }
 const nativeFetchForPrivateApi=window.fetch.bind(window);
-window.fetch=function(input,init={}){
+window.fetch=async function(input,init={}){
   const target=typeof input==="string"?input:(input&&input.url)||"";
-  if(target.startsWith(API_BASE)){
+  const isPrivateApi=target.startsWith(API_BASE);
+
+  if(isPrivateApi){
     const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
     if(!headers.has("X-Admin-Password")){
       const p=apiAccessPassword();
@@ -2073,7 +2074,16 @@ window.fetch=function(input,init={}){
     }
     init={...init,headers};
   }
-  return nativeFetchForPrivateApi(input,init);
+
+  const response=await nativeFetchForPrivateApi(input,init);
+
+  // Si le mot de passe mémorisé n'est plus valable, on l'oublie sans
+  // déconnecter l'utilisateur du portail. Le prochain essai le redemandera.
+  if(isPrivateApi && response.status===401){
+    sessionStorage.removeItem(API_ACCESS_PASSWORD_KEY);
+  }
+
+  return response;
 };
 
 let API_CONNECTED=false;
