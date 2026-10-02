@@ -139,10 +139,6 @@ async function handleScannedCode(raw){
   const now=Date.now();
   if(raw===lastScannedCode&&now-lastScannedAt<1400)return;
   lastScannedCode=raw;lastScannedAt=now;scannerBusy=true;
-
-  // Le catalogue chargé après sélection du fournisseur est la référence :
-  // si le même EAN existe chez plusieurs fournisseurs, on prend la ligne
-  // correspondant au fournisseur actuellement sélectionné.
   const exact=catalog.find(a=>norm(a.ean)===norm(raw))
     ||catalog.find(a=>norm(a.numero_article)===norm(raw))
     ||catalog.find(a=>norm(a.num_fournisseur)===norm(raw));
@@ -156,31 +152,10 @@ async function handleScannedCode(raw){
     showScanQuantity(exact);
     return;
   }
-
-  // Ne plus conclure qu'un article "appartient" à un seul autre fournisseur.
-  // Un EAN peut être vendu par plusieurs fournisseurs. Si la relation avec
-  // le fournisseur sélectionné n'est pas dans son catalogue, on l'indique
-  // simplement sans attribuer l'article au premier fournisseur trouvé.
-  $("scannerMsg").textContent="Vérification de l’article…";
-  try{
-    const j=await apiJson("/articles/recherche?q="+encodeURIComponent(raw)+"&limit=300");
-    const all=j.articles||[];
-    const existsElsewhere=all.some(a=>norm(a.ean)===norm(raw)
-      ||norm(a.numero_article)===norm(raw)
-      ||norm(a.num_fournisseur)===norm(raw));
-    if(existsElsewhere){
-      toast("Article connu, mais pas lié au fournisseur sélectionné.");
-      resumeScanner("Article connu mais non lié à "+supplierName(selectedSupplier)+". Scannez le suivant.");
-    }else{
-      toast("Article introuvable.");
-      resumeScanner("Article introuvable. Scannez le suivant.");
-    }
-  }catch(e){
-    toast("Article non trouvé pour le fournisseur sélectionné.");
-    resumeScanner("Article non trouvé pour ce fournisseur. Scannez le suivant.");
-  }
+  toast("Article non trouvé chez "+supplierName(selectedSupplier)+".");
+  resumeScanner("Article non trouvé pour ce fournisseur. Scannez le suivant.");
 }
-async function startScanner(){if(!selectedSupplier){toast("Choisissez d’abord un fournisseur.");return}if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible.");return}$("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";scannerBusy=false;lastScannedCode="";lastScannedAt=0;pendingScanArticle=null;$("scanConfirm").style.display="none";try{scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("scannerVideo").srcObject=scannerStream;if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge. Utilisez un lecteur code-barres ou la recherche manuelle.";return}const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(x=>!supported.length||supported.includes(x)),detector=new BarcodeDetector({formats:wanted.length?wanted:undefined});$("scannerMsg").textContent="Placez le code-barres dans le cadre.";const detect=async()=>{if(!scannerStream)return;try{if(!scannerBusy){const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw)await handleScannedCode(raw)}}}catch{}if(scannerStream)scannerLoop=requestAnimationFrame(detect)};scannerLoop=requestAnimationFrame(detect)}catch(e){$("scannerMsg").textContent="Impossible d'ouvrir la caméra : "+e.message}}
+async function startScanner(){if(!selectedSupplier){toast("Choisissez d’abord un fournisseur.");return}if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible.");return}$("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";scannerBusy=false;lastScannedCode="";lastScannedAt=0;pendingScanArticle=null;$("scanConfirm").style.display="none";try{scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("scannerVideo").srcObject=scannerStream;if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge. Utilisez un lecteur code-barres ou la recherche manuelle.";return}const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(x=>!supported.length||supported.includes(x)),detector=new BarcodeDetector(wanted.length?{formats:wanted}:undefined);$("scannerMsg").textContent="Placez le code-barres dans le cadre.";const detect=async()=>{if(!scannerStream)return;try{if(!scannerBusy){const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw)await handleScannedCode(raw)}}}catch{}if(scannerStream)scannerLoop=requestAnimationFrame(detect)};scannerLoop=requestAnimationFrame(detect)}catch(e){$("scannerMsg").textContent="Impossible d'ouvrir la caméra : "+e.message}}
 function stopScanner(){if(scannerLoop)cancelAnimationFrame(scannerLoop);scannerLoop=null;if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;pendingScanArticle=null;$("scanConfirm").style.display="none";$("scannerVideo").srcObject=null;$("scannerModal").style.display="none"}
 $("supplierSearch").onfocus=()=>renderSupplierResults($("supplierSearch").value);$("supplierSearch").oninput=()=>renderSupplierResults($("supplierSearch").value);$("supplierSearch").onkeydown=e=>{if(e.key==="Escape")$("supplierResults").classList.remove("show")};document.addEventListener("click",e=>{if(!e.target.closest(".supplier-picker"))$("supplierResults").classList.remove("show")});$("searchInput").oninput=()=>lookup(false);$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();lookup(true)}};$("scanBtn").onclick=startScanner;$("scanOk").onclick=confirmScannedArticle;$("scanCancel").onclick=()=>resumeScanner("Ajout annulé. Scannez l’article suivant.");$("scanQty").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();confirmScannedArticle()}};$("closeScanner").onclick=stopScanner;$("exportBtn").onclick=exportExcel;$("orderRef").oninput=scheduleSave;$("clearBtn").onclick=()=>{if(confirm("Vider les lignes de cette commande ?")){order.clear();renderOrder();scheduleSave()}};$("newOrderBtn").onclick=newOrder;$("validateBtn").onclick=validateCurrent;$("myOrdersBtn").onclick=async()=>{const p=$("ordersPanel");p.classList.toggle("show");if(p.classList.contains("show"))await loadOrders()};loadSuppliers();renderOrder();
 </script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>
