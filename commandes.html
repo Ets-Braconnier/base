@@ -4,7 +4,6 @@
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Commandes fournisseurs — Ets Braconnier</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}:root{--orange:#f47b00;--navy:#29343d;--blue:#2563eb;--green:#16824b;--red:#c9362b;--ink:#222a31;--muted:#68727c;--line:#dde2e6;--bg:#f4f6f7}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}button,input,select{font:inherit}.wrap{max-width:1500px;margin:auto;padding:14px}.header{background:var(--navy);color:#fff;border-radius:13px;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:11px}.logo{width:42px;height:42px;border-radius:9px;background:var(--orange);display:grid;place-items:center;font-weight:900;font-size:20px}.brand h1{font-size:20px;margin:0}.brand p{font-size:10px;color:#d4dce1;margin:4px 0 0}.nav{display:flex;gap:6px;flex-wrap:wrap}.nav a,.nav button{border:0;border-radius:7px;padding:9px 11px;background:var(--orange);color:#fff;text-decoration:none;font-size:10px;font-weight:800;cursor:pointer}.panel{background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:10px}.setup{display:grid;grid-template-columns:minmax(260px,1fr) minmax(220px,.6fr);gap:10px}.label{display:block;font-size:10px;font-weight:800;color:var(--muted);margin:0 0 5px}.control{width:100%;height:42px;border:1px solid #ccd4da;border-radius:8px;padding:0 11px;background:#fff;outline:none}.control:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(244,123,0,.1)}.status{font-size:10px;color:var(--muted);margin-top:7px}.supplier-picker{position:relative}.supplier-results{position:absolute;z-index:1000;left:0;right:0;top:47px;background:#fff;border:1px solid #ccd4da;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:300px;overflow:auto;display:none}.supplier-results.show{display:block}.supplier-option{padding:10px 11px;border-bottom:1px solid #edf0f2;cursor:pointer;font-size:11px}.supplier-option:last-child{border-bottom:0}.supplier-option:hover,.supplier-option.active{background:#fff5eb}.supplier-option strong{display:block}.supplier-option span{font-size:9px;color:var(--muted);margin-top:3px;display:block}.searchrow{display:grid;grid-template-columns:1fr auto;gap:7px}.scan{height:42px;border:0;border-radius:8px;background:var(--blue);color:#fff;padding:0 15px;font-size:11px;font-weight:900;cursor:pointer}.hint{font-size:9px;color:var(--muted);margin-top:6px}.results{margin-top:8px;display:grid;gap:5px}.result{border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;cursor:pointer}.result:hover{background:#fafbfc;border-color:#cbd3d9}.result strong{font-size:11px}.meta{font-size:9px;color:var(--muted);display:flex;gap:9px;flex-wrap:wrap;margin-top:4px}.addline{display:flex;gap:5px;align-items:center}.qty{width:78px;height:34px;border:1px solid #ccd4da;border-radius:7px;text-align:center;font-weight:800}.add{height:34px;border:0;border-radius:7px;background:var(--green);color:#fff;font-size:10px;font-weight:900;padding:0 12px;cursor:pointer}.orderhead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.orderhead h2{font-size:15px;margin:0}.actions{display:flex;gap:6px;flex-wrap:wrap}.actions button{height:33px;border:0;border-radius:7px;color:#fff;font-size:10px;font-weight:900;padding:0 11px;cursor:pointer}.excel{background:#217346}.clear{background:var(--red)}.tablewrap{overflow:auto;margin-top:9px;border:1px solid var(--line);border-radius:8px}.table{width:100%;border-collapse:collapse;min-width:1000px}.table th,.table td{padding:8px;border-bottom:1px solid #edf0f2;text-align:left;font-size:10px}.table th{background:#eef2f3;position:sticky;top:0}.table .q{font-size:13px;font-weight:900}.del{border:0;background:#fbe8e6;color:#a72c24;border-radius:5px;padding:5px 7px;cursor:pointer;font-size:9px;font-weight:800}.empty{text-align:center!important;color:var(--muted);padding:25px!important}.kpis{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.kpi{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:10px}.kpi b{font-size:14px;margin-right:4px}#scannerModal{display:none;position:fixed;inset:0;background:#101417;z-index:10000;color:#fff}.scanner-shell{height:100%;display:flex;flex-direction:column}.scanner-top{display:flex;justify-content:space-between;align-items:center;padding:12px}.scanner-top button{border:0;border-radius:7px;background:#fff;color:#111;padding:9px 12px;font-weight:800}.video-wrap{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}.video-wrap video{width:100%;height:100%;object-fit:cover}.scan-frame{position:absolute;width:min(82vw,480px);height:180px;border:3px solid var(--orange);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)}.scanner-msg{padding:12px;text-align:center;font-size:12px}.toast{position:fixed;right:14px;bottom:14px;background:#182027;color:#fff;padding:10px 13px;border-radius:8px;font-size:10px;opacity:0;pointer-events:none;transition:.2s;z-index:12000}.toast.show{opacity:1}@media(max-width:700px){.wrap{padding:8px}.setup{grid-template-columns:1fr}.result{align-items:flex-start;flex-direction:column}.addline{width:100%}.qty{flex:1}.header{border-radius:9px}.searchrow{grid-template-columns:1fr auto}.nav .hide-mobile{display:none}}
 
@@ -33,7 +32,7 @@ body{background:#f7f7f7!important}
 <section class="panel"><label class="label" for="searchInput">SCANNER OU RECHERCHER UN ARTICLE</label><div class="searchrow"><input autocomplete="off" class="control" id="searchInput" inputmode="search" placeholder="EAN, n° article, réf. fournisseur ou dénomination…" type="search"/><button class="scan" disabled="" id="scanBtn" type="button">📷 Scanner</button></div><div class="hint">Lecteur USB/Bluetooth : cliquez dans le champ puis scannez. Sur téléphone, utilisez 📷 Scanner. La recherche est limitée au fournisseur sélectionné.</div><div class="results" id="results"></div></section>
 <section class="panel"><div class="orderhead"><h2>Commande · <span id="orderSupplier">aucun fournisseur sélectionné</span></h2><div class="actions"><button class="excel" disabled="" id="exportBtn">Exporter Excel</button><button class="clear" disabled="" id="clearBtn">Vider la commande</button></div></div><div class="tablewrap"><table class="table"><thead><tr><th>EAN</th><th>N° article</th><th>N° article fournisseur</th><th>Dénomination</th><th>Unité</th><th>Emballage</th><th>Fournisseur</th><th>Quantité</th><th></th></tr></thead><tbody id="orderBody"><tr><td class="empty" colspan="9">Choisissez un fournisseur pour commencer.</td></tr></tbody></table></div></section>
 </div>
-<div id="scannerModal"><div class="scanner-shell"><div class="scanner-top"><b>Scanner le code-barres</b><button id="closeScanner">Fermer ✕</button></div><div class="video-wrap"><video autoplay="" id="scannerVideo" muted="" playsinline="" style="display:none"></video><div id="barcodeReader" style="width:100%;height:100%;"></div></div><div class="scanner-msg" id="scannerMsg">Placez le code-barres dans le cadre.</div>
+<div id="scannerModal"><div class="scanner-shell"><div class="scanner-top"><b>Scanner le code-barres</b><button id="closeScanner">Fermer ✕</button></div><div class="video-wrap"><video autoplay="" id="scannerVideo" muted="" playsinline=""></video><div class="scan-frame"></div></div><div class="scanner-msg" id="scannerMsg">Placez le code-barres dans le cadre.</div>
 <div id="scanConfirm" style="display:none;background:#fff;color:#222;padding:12px;border-radius:12px 12px 0 0;">
   <div id="scanArticleName" style="font-weight:900;margin-bottom:8px;"></div>
   <div style="display:flex;gap:8px;align-items:center;">
@@ -61,7 +60,7 @@ window.fetch=function(input,init={}){
   return nativeFetchForPrivateApi(input,init);
 };
 
-const $=id=>document.getElementById(id);let suppliers=[],selectedSupplier=null,catalog=[],order=new Map(),scannerStream=null,scannerLoop=null,barcodeScanner=null,scannerBusy=false,lastScannedCode="",lastScannedAt=0,pendingScanArticle=null,currentOrderId=null,currentStatus="en_cours",saveTimer=null,saving=false;
+const $=id=>document.getElementById(id);let suppliers=[],selectedSupplier=null,catalog=[],order=new Map(),scannerStream=null,scannerLoop=null,scannerBusy=false,lastScannedCode="",lastScannedAt=0,pendingScanArticle=null,currentOrderId=null,currentStatus="en_cours",saveTimer=null,saving=false;
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()}
 function cleanScanValue(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
@@ -161,71 +160,7 @@ async function handleScannedCode(raw){
     resumeScanner("Article absent de ce fournisseur. Scannez le suivant.");
   }
 }
-async function chooseCommandCamera(){
-  let cameras=[];
-  try{cameras=await Html5Qrcode.getCameras()}catch(e){console.warn("Liste caméras:",e)}
-  if(!cameras||!cameras.length)return null;
-  const rear=cameras.find(c=>/back|rear|environment|arrière|arriere|world/i.test(c.label||""));
-  return (rear||cameras[cameras.length-1]||cameras[0]).id;
-}
-async function startScanner(){
-  if(!selectedSupplier){toast("Choisissez d’abord un fournisseur.");return}
-  if(typeof Html5Qrcode==="undefined"){toast("Module scanner indisponible.");return}
-  $("scannerModal").style.display="block";
-  $("scannerMsg").textContent="Ouverture de la caméra…";
-  scannerBusy=false;lastScannedCode="";lastScannedAt=0;pendingScanArticle=null;
-  $("scanConfirm").style.display="none";
-  try{
-    if(barcodeScanner){
-      try{if(barcodeScanner.isScanning)await barcodeScanner.stop()}catch(e){}
-      try{barcodeScanner.clear()}catch(e){}
-      barcodeScanner=null;
-    }
-    const cameraId=await chooseCommandCamera();
-    if(!cameraId)throw new Error("Aucune caméra disponible");
-    barcodeScanner=new Html5Qrcode("barcodeReader",{
-      formatsToSupport:[
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.ITF
-      ],
-      verbose:false
-    });
-    await barcodeScanner.start(
-      cameraId,
-      {fps:12,qrbox:{width:Math.min(320,Math.max(220,window.innerWidth-70)),height:150},aspectRatio:1.777778},
-      async decodedText=>{
-        const raw=cleanScanValue(decodedText||"");
-        if(raw&&!scannerBusy)await handleScannedCode(raw);
-      },
-      ()=>{}
-    );
-    $("scannerMsg").textContent="Placez le code-barres dans le cadre.";
-  }catch(e){
-    console.error("Scanner:",e);
-    $("scannerMsg").textContent="Impossible d’ouvrir le scanner : "+(e?.message||e);
-  }
-}
-async function stopScanner(){
-  scannerBusy=true;
-  if(scannerLoop)cancelAnimationFrame(scannerLoop);
-  scannerLoop=null;
-  if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());
-  scannerStream=null;
-  if(barcodeScanner){
-    try{if(barcodeScanner.isScanning)await barcodeScanner.stop()}catch(e){}
-    try{barcodeScanner.clear()}catch(e){}
-    barcodeScanner=null;
-  }
-  pendingScanArticle=null;
-  $("scanConfirm").style.display="none";
-  $("scannerVideo").srcObject=null;
-  $("scannerModal").style.display="none";
-  scannerBusy=false;
-}
+async function startScanner(){if(!selectedSupplier){toast("Choisissez d’abord un fournisseur.");return}if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible.");return}$("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";scannerBusy=false;lastScannedCode="";lastScannedAt=0;pendingScanArticle=null;$("scanConfirm").style.display="none";try{scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("scannerVideo").srcObject=scannerStream;if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge. Utilisez un lecteur code-barres ou la recherche manuelle.";return}const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(x=>!supported.length||supported.includes(x)),detector=new BarcodeDetector({formats:wanted.length?wanted:undefined});$("scannerMsg").textContent="Placez le code-barres dans le cadre.";const detect=async()=>{if(!scannerStream)return;try{if(!scannerBusy){const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw)await handleScannedCode(raw)}}}catch{}if(scannerStream)scannerLoop=requestAnimationFrame(detect)};scannerLoop=requestAnimationFrame(detect)}catch(e){$("scannerMsg").textContent="Impossible d'ouvrir la caméra : "+e.message}}
+function stopScanner(){if(scannerLoop)cancelAnimationFrame(scannerLoop);scannerLoop=null;if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;pendingScanArticle=null;$("scanConfirm").style.display="none";$("scannerVideo").srcObject=null;$("scannerModal").style.display="none"}
 $("supplierSearch").onfocus=()=>renderSupplierResults($("supplierSearch").value);$("supplierSearch").oninput=()=>renderSupplierResults($("supplierSearch").value);$("supplierSearch").onkeydown=e=>{if(e.key==="Escape")$("supplierResults").classList.remove("show")};document.addEventListener("click",e=>{if(!e.target.closest(".supplier-picker"))$("supplierResults").classList.remove("show")});$("searchInput").oninput=()=>lookup(false);$("searchInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();lookup(true)}};$("scanBtn").onclick=startScanner;$("scanOk").onclick=confirmScannedArticle;$("scanCancel").onclick=()=>resumeScanner("Ajout annulé. Scannez l’article suivant.");$("scanQty").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();confirmScannedArticle()}};$("closeScanner").onclick=stopScanner;$("exportBtn").onclick=exportExcel;$("orderRef").oninput=scheduleSave;$("clearBtn").onclick=()=>{if(confirm("Vider les lignes de cette commande ?")){order.clear();renderOrder();scheduleSave()}};$("newOrderBtn").onclick=newOrder;$("validateBtn").onclick=validateCurrent;$("myOrdersBtn").onclick=async()=>{const p=$("ordersPanel");p.classList.toggle("show");if(p.classList.contains("show"))await loadOrders()};loadSuppliers();renderOrder();
 </script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>
