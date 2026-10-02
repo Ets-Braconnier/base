@@ -139,8 +139,26 @@ async function handleScannedCode(raw){
     showScanQuantity(exact);
     return;
   }
-  toast("Article non trouvé chez "+supplierName(selectedSupplier)+".");
-  resumeScanner("Article non trouvé pour ce fournisseur. Scannez le suivant.");
+
+  $("scannerMsg").textContent="Article absent de ce fournisseur. Vérification…";
+  try{
+    const j=await apiJson("/articles/recherche?q="+encodeURIComponent(raw)+"&limit=300");
+    const all=j.articles||[];
+    const other=all.find(a=>norm(a.ean)===norm(raw))
+      ||all.find(a=>norm(a.numero_article)===norm(raw))
+      ||all.find(a=>norm(a.num_fournisseur)===norm(raw));
+    if(other){
+      const nom=other.fournisseur||other.nom_fournisseur||"un autre fournisseur";
+      toast("Cet article n’appartient pas à "+supplierName(selectedSupplier)+".");
+      resumeScanner("Cet article appartient à "+nom+". Scannez le suivant.");
+    }else{
+      toast("Article introuvable.");
+      resumeScanner("Article introuvable. Scannez le suivant.");
+    }
+  }catch(e){
+    toast("Article absent du fournisseur sélectionné.");
+    resumeScanner("Article absent de ce fournisseur. Scannez le suivant.");
+  }
 }
 async function startScanner(){if(!selectedSupplier){toast("Choisissez d’abord un fournisseur.");return}if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible.");return}$("scannerModal").style.display="block";$("scannerMsg").textContent="Ouverture de la caméra…";scannerBusy=false;lastScannedCode="";lastScannedAt=0;pendingScanArticle=null;$("scanConfirm").style.display="none";try{scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("scannerVideo").srcObject=scannerStream;if(!("BarcodeDetector" in window)){$("scannerMsg").textContent="Lecture automatique non prise en charge. Utilisez un lecteur code-barres ou la recherche manuelle.";return}const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),wanted=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(x=>!supported.length||supported.includes(x)),detector=new BarcodeDetector(wanted.length?{formats:wanted}:undefined);$("scannerMsg").textContent="Placez le code-barres dans le cadre.";const detect=async()=>{if(!scannerStream)return;try{if(!scannerBusy){const codes=await detector.detect($("scannerVideo"));if(codes.length){const raw=cleanScanValue(codes[0].rawValue||"");if(raw)await handleScannedCode(raw)}}}catch{}if(scannerStream)scannerLoop=requestAnimationFrame(detect)};scannerLoop=requestAnimationFrame(detect)}catch(e){$("scannerMsg").textContent="Impossible d'ouvrir la caméra : "+e.message}}
 function stopScanner(){if(scannerLoop)cancelAnimationFrame(scannerLoop);scannerLoop=null;if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;pendingScanArticle=null;$("scanConfirm").style.display="none";$("scannerVideo").srcObject=null;$("scannerModal").style.display="none"}
