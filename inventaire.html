@@ -290,7 +290,7 @@ function updateKpis(){
   $("userKpi").textContent=currentUser||"—";$("inventoryUser").textContent=currentUser||"—";
   $("countKpi").textContent=inventory.size;
   $("unitsKpi").textContent=[...inventory.values()].reduce((s,x)=>s+safeNum(x.quantite),0);
-  $("catalogKpi").textContent=catalog.length;
+  $("catalogKpi").textContent="—";
 }
 function setSyncBadge(type,text){const b=$("syncBadge");b.className="sync "+type;b.textContent=text}
 function renderInventory(){
@@ -399,26 +399,44 @@ async function syncAll(){
 }
 
 async function loadCatalog(){
-  $("lookupState").textContent="Chargement des fournisseurs…";
-  try{
-    const s=await apiJson("/fournisseurs");const suppliers=Array.isArray(s.fournisseurs)?s.fournisseurs:[];
-    catalog=[];let done=0;const queue=[...suppliers];
-    async function worker(){while(queue.length){const f=queue.shift();try{const j=await apiJson("/articles?fournisseur_id="+encodeURIComponent(f.id));for(const a of (j.articles||[]))catalog.push({fournisseur_id:f.id,fournisseur:f.nom||a.nom_fournisseur||"",numero_article:a.numero_article||"",num_fournisseur:a.num_fournisseur||"",denomination:a.denomination||"",ean:String(a.ean||"").trim(),unite:a.unite||"",emballage:a.emballage||""})}catch{}done++;$("lookupState").textContent=`Chargement bibliothèque : ${done}/${suppliers.length} fournisseur(s) · ${catalog.length} article(s)`}}
-    await Promise.all(Array.from({length:Math.min(6,Math.max(1,suppliers.length))},worker));
-    $("lookupState").textContent=`Bibliothèque prête : ${catalog.length} article(s) chargés.`;updateKpis();
-    $("searchInput").focus();
-  }catch(err){$("lookupState").textContent="Impossible de charger la bibliothèque : "+err.message}
+  // V11 : ne précharge plus tous les fournisseurs/articles.
+  // Les articles sont recherchés à la demande via /articles/recherche.
+  catalog=[];
+  $("lookupState").textContent="Recherche à la demande prête. Scannez un EAN ou saisissez au moins 3 caractères.";
+  $("catalogKpi").textContent="—";
+  $("searchInput").focus();
 }
 
-function scoreArticle(a,q){
-  const nq=norm(q), e=norm(a.ean), na=norm(a.numero_article), nf=norm(a.num_fournisseur), d=norm(a.denomination);
-  if(!nq)return 0;if(e===nq)return 100;if(na===nq)return 95;if(nf===nq)return 92;
-  if(e.includes(nq))return 85;if(na.includes(nq))return 82;if(nf.includes(nq))return 80;if(d.includes(nq))return 70;
-  const words=nq.split(/\s+/).filter(Boolean);if(words.length&&words.every(w=>(d+" "+na+" "+nf+" "+e).includes(w)))return 60;return 0
+function mapApiArticle(a){
+  return {
+    fournisseur_id:a.fournisseur_id??null,
+    fournisseur:a.fournisseur||a.nom_fournisseur||"",
+    numero_article:a.numero_article||"",
+    num_fournisseur:a.num_fournisseur||"",
+    denomination:a.denomination||"",
+    ean:String(a.ean||"").trim(),
+    unite:a.unite||"",
+    emballage:a.emballage||""
+  };
 }
-function searchCatalog(q){
-  const cleaned=cleanScanValue(q);if(!cleaned)return[];
-  return catalog.map(a=>({a,s:scoreArticle(a,cleaned)})).filter(x=>x.s>0).sort((x,y)=>y.s-x.s||String(x.a.denomination).localeCompare(String(y.a.denomination),"fr")).slice(0,30).map(x=>x.a)
+
+let lookupSeq=0, lookupTimer=null;
+async function searchCatalog(q){
+  const cleaned=cleanScanValue(q);
+  if(!cleaned)return [];
+  const seq=++lookupSeq;
+  $("lookupState").textContent="Recherche…";
+  try{
+    const j=await apiJson("/articles/recherche?q="+encodeURIComponent(cleaned)+"&limit=30");
+    if(seq!==lookupSeq)return null;
+    const list=(Array.isArray(j.articles)?j.articles:[]).map(mapApiArticle);
+    $("lookupState").textContent=list.length?`${list.length} résultat(s).`:`Aucun article trouvé.`;
+    return list;
+  }catch(err){
+    if(seq!==lookupSeq)return null;
+    $("lookupState").textContent="Recherche impossible : "+err.message;
+    return [];
+  }
 }
 
 async function saveCountForArticle(a,qtyValue,{resetAfter=true,resumeCamera=true}={}){
@@ -526,11 +544,19 @@ function selectArticle(a){
   const prev=inventory.get(articleKey(a));$("previous").textContent=prev?`Déjà compté : ${prev.quantite} · ${niceDate(prev.updated_at)}`:"Pas encore compté dans cet inventaire.";
   $("qtyInput").value=prev?.quantite??"";$("results").innerHTML="";setTimeout(()=>{$("qtyInput").focus();$("qtyInput").select()},0)
 }
-function runLookup({scan=false}={}){
-  const raw=$("searchInput").value, cleaned=cleanScanValue(raw);if(cleaned!==raw&&scan)$("searchInput").value=cleaned;
-  const list=searchCatalog(cleaned);
-  if(scan){const exact=list.find(a=>norm(a.ean)===norm(cleaned))||list.find(a=>norm(a.numero_article)===norm(cleaned))||list.find(a=>norm(a.num_fournisseur)===norm(cleaned));if(exact){selectArticle(exact);return}}
-  if(list.length===1 && /^\d{8,14}$/.test(cleaned)){selectArticle(list[0]);return}renderResults(list)
+async function runLookup({scan=false}={}){
+  const raw=$("searchInput").value, cleaned=cleanScanValue(raw);
+  if(cleaned!==raw&&scan)$("searchInput").value=cleaned;
+  if(!cleaned){lookupSeq++;$("results").innerHTML="";$("lookupState").textContent="Recherche à la demande prête.";return}
+  if(!scan && cleaned.length<3){lookupSeq++;$("results").innerHTML="";$("lookupState").textContent="Saisissez au moins 3 caractères.";return}
+  const list=await searchCatalog(cleaned);
+  if(list===null)return;
+  if(scan){
+    const exact=list.find(a=>norm(a.ean)===norm(cleaned))||list.find(a=>norm(a.numero_article)===norm(cleaned))||list.find(a=>norm(a.num_fournisseur)===norm(cleaned));
+    if(exact){selectArticle(exact);return}
+  }
+  if(list.length===1 && /^\d{8,14}$/.test(cleaned)){selectArticle(list[0]);return}
+  renderResults(list);
 }
 
 async function saveCount(){
@@ -900,7 +926,7 @@ $("adminDeleteUserBtn").addEventListener("click",()=>{
 });
 
 $("loginBtn").addEventListener("click",()=>login($("loginInput").value));$("loginInput").addEventListener("keydown",e=>{if(e.key==="Enter")login($("loginInput").value)});
-$("changeUserBtn").addEventListener("click",changeUser);$("searchInput").addEventListener("input",()=>runLookup());$("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();runLookup({scan:true})}});$("qtyInput").addEventListener("keydown",e=>{if(e.key==="Enter")saveCount()});$("okBtn").addEventListener("click",saveCount);$("exportBtn").addEventListener("click",exportExcel);$("syncBtn").addEventListener("click",syncAll);$("scanBtn").addEventListener("click",startScanner);$("closeScanner").addEventListener("click",closeScanner);
+$("changeUserBtn").addEventListener("click",changeUser);$("searchInput").addEventListener("input",()=>{clearTimeout(lookupTimer);lookupTimer=setTimeout(()=>runLookup(),280)});$("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(lookupTimer);runLookup({scan:true})}});$("qtyInput").addEventListener("keydown",e=>{if(e.key==="Enter")saveCount()});$("okBtn").addEventListener("click",saveCount);$("exportBtn").addEventListener("click",exportExcel);$("syncBtn").addEventListener("click",syncAll);$("scanBtn").addEventListener("click",startScanner);$("closeScanner").addEventListener("click",closeScanner);
 window.addEventListener("beforeunload",closeScanner);window.addEventListener("online",()=>{if(currentUser)syncAll()});
 
 (async()=>{await portalCheck();const last=localStorage.getItem(USER_KEY)||"";if(last){$("loginInput").value=last;login(last)}else{$("loginInput").focus()}})();
