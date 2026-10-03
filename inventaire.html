@@ -17,6 +17,12 @@
 .sync{font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px}.sync.ok{background:#def3e7;color:#176b2c}.sync.wait{background:#fff1cc;color:#7b5e00}.sync.bad{background:#fde3e3;color:#8b1b1b}
 #loginGate{position:fixed;inset:0;background:linear-gradient(135deg,#eef1f3,#fafbfb);z-index:9999;display:grid;place-items:center;padding:18px}.login-card{width:min(410px,100%);background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:0 18px 55px rgba(25,34,41,.14)}.login-brand{width:52px;height:52px;border-radius:11px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:900}.login-card h1{font-size:21px;margin:13px 0 5px}.login-card p{font-size:11px;color:var(--muted);line-height:1.45}.login-card input{width:100%;height:44px;border:1px solid #cfd6dc;border-radius:8px;padding:0 12px;font-size:16px}.login-card button{width:100%;height:42px;border:0;border-radius:8px;background:var(--brand);color:#fff;font-weight:900;margin-top:9px;cursor:pointer}.login-error{font-size:10px;color:var(--red);min-height:14px;margin-top:5px}
 #scannerModal{display:none;position:fixed;inset:0;background:#101417;z-index:10000;color:#fff}.scanner-shell{height:100%;display:flex;flex-direction:column}.scanner-top{display:flex;justify-content:space-between;align-items:center;padding:12px}.scanner-top button{border:0;border-radius:7px;background:#fff;color:#111;padding:9px 12px;font-weight:800}.video-wrap{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}.video-wrap video{width:100%;height:100%;object-fit:cover}.scan-frame{position:absolute;width:min(82vw,480px);height:180px;border:3px solid var(--brand);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)}.scanner-msg{padding:12px;text-align:center;font-size:12px;background:#101417}
+.scan-qty-overlay{display:none;position:absolute;inset:0;z-index:10002;background:rgba(0,0,0,.58);align-items:center;justify-content:center;padding:14px}
+.scan-qty-overlay.show{display:flex}.scan-qty-card{width:min(390px,94vw);background:#fff;color:#202830;border-radius:16px;padding:16px;box-shadow:0 18px 55px rgba(0,0,0,.38)}
+.scan-qty-card h3{margin:0 0 5px;font-size:18px}.scan-qty-meta{font-size:11px;color:#667085;line-height:1.4;margin-bottom:10px}.scan-qty-display{height:58px;border:2px solid #cfd6dc;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;margin-bottom:10px;background:#f7f8f9}
+.scan-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.scan-keypad button{height:52px;border:0;border-radius:10px;background:#eef1f3;color:#202830;font-size:22px;font-weight:900;cursor:pointer;touch-action:manipulation}.scan-keypad button:active{transform:scale(.98)}
+.scan-keypad .key-clear{background:#fde8e8;color:#8b1b1b}.scan-keypad .key-ok{grid-column:1/-1;background:var(--green);color:#fff;font-size:17px}.scan-keypad .key-cancel{grid-column:1/-1;background:#e8ebed;color:#3b4650;font-size:14px;height:42px}
+.scan-found{font-size:10px;color:#18794e;font-weight:800;margin-bottom:8px;text-align:center}
 .toast{position:fixed;right:14px;bottom:14px;z-index:10001;background:#202830;color:#fff;border-radius:8px;padding:10px 12px;font-size:11px;box-shadow:0 6px 22px rgba(0,0,0,.18);display:none}.toast.show{display:block}
 @media(max-width:760px){.wrap{padding:8px}.header{border-radius:9px}.head-actions .desktop-hide{display:none}.statusbar{grid-template-columns:1fr 1fr}.scan-btn{display:block}.article-grid{grid-template-columns:1fr 1fr}.qty-row{grid-template-columns:1fr auto}.previous{grid-column:1/-1}.search{font-size:16px}.panel{padding:10px}}
 @media(max-width:420px){.article-grid{grid-template-columns:1fr}.qty-row{grid-template-columns:1fr}.ok-btn{width:100%}}
@@ -229,6 +235,22 @@ body{background:#f7f7f7!important}
 <div class="video-wrap"><video autoplay="" id="scannerVideo" muted="" playsinline=""></video><div class="scan-frame"></div></div>
 <div class="scanner-msg" id="scannerMsg">Placez le code-barres dans le cadre.</div>
 </div>
+<div class="scan-qty-overlay" id="scanQtyOverlay">
+  <div class="scan-qty-card">
+    <div class="scan-found">Article trouvé</div>
+    <h3 id="scanQtyTitle">Article</h3>
+    <div class="scan-qty-meta" id="scanQtyMeta"></div>
+    <div class="scan-qty-display" id="scanQtyDisplay">0</div>
+    <div class="scan-keypad" id="scanKeypad">
+      <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+      <button type="button" class="key-clear" data-key="clear">⌫</button><button type="button" data-key="0">0</button><button type="button" class="key-clear" data-key="reset">C</button>
+      <button type="button" class="key-ok" data-key="ok">Valider ✓</button>
+      <button type="button" class="key-cancel" data-key="cancel">Annuler et continuer le scan</button>
+    </div>
+  </div>
+</div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -255,7 +277,7 @@ const USER_KEY="braconnier_inventory_user_v1";
 const LOCAL_PREFIX="braconnier_inventory_v1_";
 let catalog=[], currentUser="", selectedArticle=null, inventory=new Map(), serverInventoryAvailable=true, pendingSync=new Set();
 let adminPassword="", adminSummaries=[], adminDetailItems=[], adminDetailLogin="";
-let scannerStream=null, scannerLoop=null, scannerPaused=false, scannerPersistent=false;
+let scannerStream=null, scannerLoop=null, scannerPaused=false, scannerPersistent=false, scannerLastCode="", scannerQtyArticle=null, scannerQtyValue="";
 
 const $=id=>document.getElementById(id);
 const norm=s=>String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
@@ -836,6 +858,54 @@ function lockAdminPanel(){
 }
 
 
+function setScannerQtyDisplay(){
+  $("scanQtyDisplay").textContent=scannerQtyValue===""?"0":scannerQtyValue;
+}
+function openScannerQuantity(a){
+  scannerQtyArticle=a;
+  const prev=inventory.get(articleKey(a));
+  scannerQtyValue=prev?String(prev.quantite):"";
+  $("scanQtyTitle").textContent=a.denomination||a.numero_article||a.ean||"Article";
+  $("scanQtyMeta").textContent=[a.ean&&("EAN : "+a.ean),a.numero_article&&("Article : "+a.numero_article),a.fournisseur].filter(Boolean).join(" · ")+(prev?" · Déjà compté : "+prev.quantite:"");
+  setScannerQtyDisplay();
+  $("scanQtyOverlay").classList.add("show");
+}
+function closeScannerQuantity({resume=true}={}){
+  $("scanQtyOverlay").classList.remove("show");
+  scannerQtyArticle=null;scannerQtyValue="";
+  if(resume&&scannerStream&&scannerPersistent){
+    scannerPaused=false;
+    $("scannerMsg").textContent="Placez le code-barres suivant dans le cadre.";
+  }
+}
+async function handleScannerCode(raw){
+  const code=cleanScanValue(raw);
+  if(!code)return;
+  scannerPaused=true;
+  $("scannerMsg").textContent="Recherche de l’article…";
+  const list=await searchCatalog(code);
+  if(!scannerStream||!scannerPersistent)return;
+  if(list===null){scannerPaused=false;return}
+  const exact=list.find(a=>norm(a.ean)===norm(code))||list.find(a=>norm(a.numero_article)===norm(code))||list.find(a=>norm(a.num_fournisseur)===norm(code));
+  const found=exact||(list.length===1?list[0]:null);
+  if(!found){
+    $("scannerMsg").textContent="Article non trouvé. Présentez un autre code-barres.";
+    setTimeout(()=>{if(scannerStream&&scannerPersistent&&!$("scanQtyOverlay").classList.contains("show"))scannerPaused=false},650);
+    return;
+  }
+  $("scannerMsg").textContent="Article trouvé — indiquez la quantité.";
+  openScannerQuantity(found);
+}
+async function validateScannerQuantity(){
+  if(!scannerQtyArticle)return;
+  const qty=scannerQtyValue===""?0:Number(scannerQtyValue);
+  if(!Number.isFinite(qty)||qty<0)return;
+  const a=scannerQtyArticle;
+  const ok=await saveCountForArticle(a,qty,{resetAfter:false,resumeCamera:false});
+  if(!ok)return;
+  closeScannerQuantity({resume:true});
+}
+
 async function startScanner(){
   if(!navigator.mediaDevices?.getUserMedia){toast("Caméra non disponible sur ce navigateur.");return}
   scannerPersistent=true;
@@ -866,14 +936,14 @@ async function startScanner(){
       if(!scannerPaused){
         try{
           const codes=await detector.detect($("scannerVideo"));
+          if(!codes.length)scannerLastCode="";
           if(codes.length){
             const raw=cleanScanValue(codes[0].rawValue||"");
             if(raw){
-              scannerPaused=true;
-              // On masque la caméra, mais on NE l'arrête PAS.
-              $("scannerModal").style.display="none";
-              $("searchInput").value=raw;
-              runLookup({scan:true});
+              if(raw!==scannerLastCode){
+                scannerLastCode=raw;
+                handleScannerCode(raw);
+              }
             }
           }
         }catch{}
@@ -894,6 +964,7 @@ function resumeScanner(){
 }
 
 function closeScanner(){
+  $("scanQtyOverlay").classList.remove("show");scannerQtyArticle=null;scannerQtyValue="";scannerLastCode="";
   scannerPersistent=false;
   scannerPaused=false;
   if(scannerLoop)cancelAnimationFrame(scannerLoop);
@@ -926,6 +997,15 @@ $("adminDeleteUserBtn").addEventListener("click",()=>{
 });
 
 $("loginBtn").addEventListener("click",()=>login($("loginInput").value));$("loginInput").addEventListener("keydown",e=>{if(e.key==="Enter")login($("loginInput").value)});
+$("scanKeypad").addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-key]");if(!btn)return;
+  const key=btn.dataset.key;
+  if(/^\d$/.test(key)){if(scannerQtyValue.length<7)scannerQtyValue=(scannerQtyValue==="0"?"":scannerQtyValue)+key;setScannerQtyDisplay();return}
+  if(key==="clear"){scannerQtyValue=scannerQtyValue.slice(0,-1);setScannerQtyDisplay();return}
+  if(key==="reset"){scannerQtyValue="";setScannerQtyDisplay();return}
+  if(key==="cancel"){closeScannerQuantity({resume:true});return}
+  if(key==="ok")validateScannerQuantity();
+});
 $("changeUserBtn").addEventListener("click",changeUser);$("searchInput").addEventListener("input",()=>{clearTimeout(lookupTimer);lookupTimer=setTimeout(()=>runLookup(),280)});$("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(lookupTimer);runLookup({scan:true})}});$("qtyInput").addEventListener("keydown",e=>{if(e.key==="Enter")saveCount()});$("okBtn").addEventListener("click",saveCount);$("exportBtn").addEventListener("click",exportExcel);$("syncBtn").addEventListener("click",syncAll);$("scanBtn").addEventListener("click",startScanner);$("closeScanner").addEventListener("click",closeScanner);
 window.addEventListener("beforeunload",closeScanner);window.addEventListener("online",()=>{if(currentUser)syncAll()});
 
