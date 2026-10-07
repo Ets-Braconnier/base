@@ -37,6 +37,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 .scan-help{background:#0d1013;text-align:center;padding:16px 18px 22px;font-size:13px}.scan-help strong{display:block;font-size:16px;margin-bottom:4px}.scan-loading{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#090b0d;color:#fff;text-align:center;padding:30px}.scan-loading.show{display:flex}.scan-loading .spinner{width:46px;height:46px;border:4px solid rgba(255,255,255,.22);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}.scan-loading strong{font-size:20px}.scan-loading span{font-size:13px;color:#cfd6dc}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:560px){.brandbar{min-height:92px;padding:12px;gap:18px}.logo-box{height:58px}.logo-box.brac{width:42vw}.logo-box.outil{width:46vw}.main{padding:20px 12px 24px}.scan-card{padding:12px}.scan-button{min-height:225px}.refs{grid-template-columns:1fr}.scan-head{gap:12px;justify-content:flex-start;padding-right:58px}.scan-logo{height:48px}.scan-logo.brac{width:34vw}.scan-logo.outil{width:39vw}}
 </style>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -56,13 +57,13 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 </main></div>
 <section id="scanner">
  <div class="scan-head"><div class="scan-logo brac"><img src="logo-braconnier.png" alt="Braconnier"></div><div class="scan-logo outil"><img src="logo-outilsud.png" alt="Outilsud"></div><button class="close" id="closeScan">Fermer</button></div>
- <div class="camera"><video id="video" autoplay muted playsinline></video><div class="target"></div></div>
+ <div class="camera"><div id="priceBarcodeReader" style="width:100%;height:100%"></div><div class="target"></div></div>
  <div class="scan-help" id="scanHelp"><strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur</div>
  <div class="scan-loading" id="scanLoading"><div class="spinner"></div><strong>Recherche du prix…</strong><span>Consultation Braconnier & Outilsud</span></div>
 </section>
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
-let stream=null,raf=null,busy=false;
+let priceBarcodeScanner=null,barcodeStarting=false,busy=false;
 function clean(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
@@ -118,16 +119,42 @@ async function lookup(raw){
  showChoices(groups)}
  catch(e){finishScanLookup();views("home");$("status").textContent="Connexion impossible. Réessayez."}
 }
-async function startScanner(){
- if(busy)return;if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
- busy=true;$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
- try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});$("video").srcObject=stream;
- if(!("BarcodeDetector" in window)){stopScanner();busy=false;$("status").textContent="Scanner non pris en charge par ce navigateur.";return}
- const supported=await BarcodeDetector.getSupportedFormats().catch(()=>[]),formats=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","codabar"].filter(f=>!supported.length||supported.includes(f)),detector=new BarcodeDetector(formats.length?{formats}:undefined);
- const loop=async()=>{if(!stream)return;try{const codes=await detector.detect($("video"));if(codes.length){const value=clean(codes[0].rawValue);if(value){stopScanner(false);document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");await lookup(value);return}}}catch(e){}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
- catch(e){stopScanner();busy=false;$("status").textContent="Autorisez l'accès à la caméra pour scanner un article."}
+function barcodeFormats(){
+ if(typeof Html5QrcodeSupportedFormats==="undefined")return undefined;
+ return [Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF,Html5QrcodeSupportedFormats.CODABAR];
 }
-function stopScanner(closeOverlay=true){if(raf)cancelAnimationFrame(raf);raf=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("video").srcObject=null;if(closeOverlay)$("scanner").classList.remove("open")}
-$("startScan").onclick=startScanner;$("scanAgain").onclick=startScanner;$("choicesAgain").onclick=startScanner;$("retry").onclick=startScanner;$("closeScan").onclick=()=>{$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";stopScanner();busy=false};
+async function chooseCamera(){
+ let cameras=[];try{cameras=await Html5Qrcode.getCameras()}catch(e){console.warn("Liste caméras:",e)}
+ if(!cameras||!cameras.length)return null;
+ const rear=cameras.find(c=>/back|rear|environment|arrière|arriere|world/i.test(c.label||""));
+ return (rear||cameras[cameras.length-1]||cameras[0]).id;
+}
+async function startScanner(){
+ if(busy||barcodeStarting)return;
+ if(typeof Html5Qrcode==="undefined"){$("status").textContent="Le module scanner n’a pas pu être chargé. Rechargez la page.";return}
+ if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
+ busy=true;barcodeStarting=true;$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
+ try{
+   const cameraId=await chooseCamera();
+   if(!cameraId)throw new Error("Aucune caméra détectée");
+   priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),verbose:false});
+   await priceBarcodeScanner.start(cameraId,{fps:10,qrbox:{width:Math.min(500,Math.max(250,window.innerWidth-60)),height:180},aspectRatio:1.777778},async decodedText=>{
+     if(!busy)return;
+     const value=clean(decodedText);if(!value)return;
+     barcodeStarting=false;
+     await stopScanner(false);
+     document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");
+     await lookup(value);
+   },()=>{});
+   barcodeStarting=false;
+   $("status").textContent="Scanner actif.";
+ }catch(e){console.warn("Scanner prix:",e);barcodeStarting=false;await stopScanner();busy=false;$("status").textContent="Impossible d’ouvrir la caméra. Vérifiez l’autorisation caméra et utilisez Safari/Chrome en HTTPS."}
+}
+async function stopScanner(closeOverlay=true){
+ const scanner=priceBarcodeScanner;priceBarcodeScanner=null;barcodeStarting=false;
+ if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){console.warn(e)}try{scanner.clear()}catch(e){}}
+ if(closeOverlay)$("scanner").classList.remove("open");
+}
+$("startScan").onclick=startScanner;$("scanAgain").onclick=startScanner;$("choicesAgain").onclick=startScanner;$("retry").onclick=startScanner;$("closeScan").onclick=async()=>{$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";await stopScanner();busy=false};
 </script>
 </body></html>
