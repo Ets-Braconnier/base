@@ -53,7 +53,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
  </div>
  <section class="result" id="resultView"><article class="product"><div class="product-top"><div class="store-badges" id="productStores"></div><div class="product-name" id="productName"></div></div><div class="pricebox"><span>Prix TVAC</span><strong id="productPrice"></strong></div><div class="refs"><div class="ref"><span>N° article magasin</span><b id="productArticle"></b></div><div class="ref"><span>Référence article fournisseur</span><b id="productSupplierRef"></b></div></div><button class="again" id="scanAgain">Scanner un autre article</button></article></section>
  <section class="choices" id="choicesView"><h2>Plusieurs articles trouvés</h2><p>Choisissez l'article correspondant.</p><div id="choiceList"></div><button class="again" id="choicesAgain" style="margin-top:18px">Scanner un autre article</button></section>
- <section class="notfound" id="notFound"><h2>Article introuvable</h2><p>Ce code n'a pas été trouvé dans notre base articles.</p><button class="retry" id="retry">Scanner un autre article</button></section>
+ <section class="notfound" id="notFound"><h2>Article introuvable</h2><p id="notFoundMessage">Ce code n'a pas été trouvé dans notre base articles.</p><p id="notFoundCode" style="font-size:16px;font-weight:bold;overflow-wrap:anywhere"></p><button class="retry" id="retry">Scanner un autre article</button></section>
 </main></div>
 <section id="scanner">
  <div class="scan-head"><div class="scan-logo brac"><img src="logo-braconnier.png" alt="Braconnier"></div><div class="scan-logo outil"><img src="logo-outilsud.png" alt="Outilsud"></div><button class="close" id="closeScan">Fermer</button></div>
@@ -107,17 +107,46 @@ function showChoices(groups){
  views("choices")
 }
 async function lookup(raw){
- const q=clean(raw);if(!q)return;views("home");$("status").textContent="Recherche de l'article…";
- try{
+ const q=clean(raw);if(!q)return;
+ views("home");$("status").textContent="Recherche de l'article…";
  const url=API+"/scanner/recherche?q="+encodeURIComponent(q)+"&limit=100";
- const load=async enseigne=>{try{const opt={cache:"no-store"};if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)return [];return (j.articles||[]).map(a=>({...a,_enseigne:enseigne}))}catch{return []}};
- const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
- const rows=[...brac,...outilsud].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
- if(!rows.length){finishScanLookup();views("notfound");return}
- const groups=groupSameProducts(rows);
- if(groups.length===1){showArticle(groups[0].article,groups[0].stores);return}
- showChoices(groups)}
- catch(e){finishScanLookup();views("home");$("status").textContent="Connexion impossible. Réessayez."}
+ async function load(enseigne){
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    const opt={cache:"no-store"};
+    if(enseigne==="outilsud")opt.headers={"X-Enseigne":"outilsud"};
+    const r=await fetch(url,opt);
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const j=await r.json();
+    if(j.ok===false||!Array.isArray(j.articles))throw new Error("Réponse API invalide");
+    return {ok:true,articles:j.articles.map(a=>({...a,_enseigne:enseigne}))};
+   }catch(e){console.warn("Recherche "+enseigne+" (essai "+(attempt+1)+"):",e);}
+  }
+  return {ok:false,articles:[]};
+ }
+ try{
+  const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
+  const rows=[...brac.articles,...outilsud.articles].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
+  if(rows.length){
+   const groups=groupSameProducts(rows);
+   if(groups.length===1)showArticle(groups[0].article,groups[0].stores);
+   else showChoices(groups);
+   return;
+  }
+  finishScanLookup();
+  $("notFoundCode").textContent="Code lu : "+q;
+  if(!brac.ok||!outilsud.ok){
+   $("notFound").querySelector("h2").textContent="Recherche incomplète";
+   $("notFoundMessage").textContent="Impossible de vérifier "+(!brac.ok&&!outilsud.ok?"les deux bases":(!brac.ok?"Braconnier":"Outilsud"))+". Réessayez : l'article n'est pas nécessairement absent.";
+  }else{
+   $("notFound").querySelector("h2").textContent="Article introuvable";
+   $("notFoundMessage").textContent="Aucune correspondance exacte trouvée. Comparez le code lu ci-dessous avec celui imprimé sur l'article.";
+  }
+  views("notfound");
+ }catch(e){
+  console.warn("Recherche scanner:",e);
+  finishScanLookup();views("home");$("status").textContent="Erreur de recherche. Réessayez.";
+ }
 }
 function barcodeFormats(){
  if(typeof Html5QrcodeSupportedFormats==="undefined")return undefined;
