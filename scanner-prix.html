@@ -112,14 +112,11 @@ function validEAN13(code){
  const sum=[...code.slice(0,12)].reduce((acc,d,i)=>acc+Number(d)*(i%2?3:1),0);
  return (10-sum%10)%10===Number(code[12]);
 }
-function restoreMissingEANPrefix(code){
- if(!/^\d{12}$/.test(code))return null;
- const matches=[];
- for(let n=0;n<=9;n++){
-  const candidate=String(n)+code;
-  if(validEAN13(candidate))matches.push(candidate);
- }
- return matches.length===1?matches[0]:null;
+function missingEANPrefixes(code){
+ if(!/^\d{12}$/.test(code))return [];
+ // Le premier chiffre d'un EAN-13 ne peut pas être déterminé par la clé
+ // de contrôle : tester les 10 préfixes contre les articles réels.
+ return Array.from({length:10},(_,n)=>String(n)+code);
 }
 async function lookup(raw){
  const q=clean(raw);if(!q)return;
@@ -148,18 +145,25 @@ async function lookup(raw){
   let term=q;
   let [brac,outilsud]=await Promise.all([load("braconnier",term),load("outilsud",term)]);
   let rows=matches(brac,outilsud,term);
-  // Seulement si aucune correspondance exacte n'a été trouvée pour les 12 chiffres.
-  // On reconstruit un EAN-13 à partir de sa clé de contrôle, sans préfixe imposé.
-  // Si l'une des bases est inaccessible, on ne prétend pas avoir tout vérifié.
-  const restored=rows.length===0&&brac.ok&&outilsud.ok?restoreMissingEANPrefix(q):null;
-  if(restored && restored!==q){
-   const [b2,o2]=await Promise.all([load("braconnier",restored),load("outilsud",restored)]);
-   const restoredRows=matches(b2,o2,restored);
-   if(restoredRows.length){
-    rows=restoredRows;term=restored;brac=b2;outilsud=o2;
-    console.info("EAN-13 rétabli après lecture tronquée :",q,"→",restored);
-   }else if(!b2.ok||!o2.ok){
-    brac=b2;outilsud=o2;
+  let candidates=[];
+  if(rows.length===0 && /^\d{12}$/.test(q) && brac.ok && outilsud.ok){
+   candidates=missingEANPrefixes(q);
+   const results=await Promise.all(candidates.map(async candidate=>{
+    const [b,o]=await Promise.all([load("braconnier",candidate),load("outilsud",candidate)]);
+    return {candidate,b,o,rows:matches(b,o,candidate).filter(a=>norm(a.ean)===norm(candidate))};
+   }));
+   const failures=results.filter(x=>!x.b.ok||!x.o.ok);
+   if(failures.length){brac={ok:false};outilsud={ok:false};}
+   else{
+    const found=results.filter(x=>x.rows.length);
+    if(found.length===1){rows=found[0].rows;term=found[0].candidate;}
+    else if(found.length>1){
+     finishScanLookup();
+     $("notFound").querySelector("h2").textContent="Code ambigu";
+     $("notFoundMessage").textContent="Plusieurs EAN complets correspondent aux 12 chiffres lus. Repositionnez le code-barres pour une nouvelle lecture.";
+     $("notFoundCode").textContent="Code lu : "+q+" · EAN possibles : "+found.map(x=>x.candidate).join(", ");
+     views("notfound");return;
+    }
    }
   }
   if(rows.length){
@@ -169,13 +173,13 @@ async function lookup(raw){
    return;
   }
   finishScanLookup();
-  $("notFoundCode").textContent="Code lu : "+q+(restored?" · EAN-13 possible : "+restored:"");
+  $("notFoundCode").textContent="Code lu : "+q+(candidates.length?" · Préfixe manquant non confirmé":"");
   if(!brac.ok||!outilsud.ok){
    $("notFound").querySelector("h2").textContent="Recherche incomplète";
    $("notFoundMessage").textContent="Impossible de vérifier "+(!brac.ok&&!outilsud.ok?"les deux bases":(!brac.ok?"Braconnier":"Outilsud"))+". Réessayez : l'article n'est pas nécessairement absent.";
   }else{
    $("notFound").querySelector("h2").textContent="Article introuvable";
-   $("notFoundMessage").textContent="Aucune correspondance exacte trouvée. Comparez le code lu avec celui imprimé sur l'article.";
+   $("notFoundMessage").textContent="Aucune correspondance trouvée, y compris après vérification des préfixes EAN possibles. Comparez le code lu avec celui imprimé.";
   }
   views("notfound");
  }catch(e){
