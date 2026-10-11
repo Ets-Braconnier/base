@@ -63,7 +63,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 </section>
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
-let priceBarcodeScanner=null,barcodeStarting=false,busy=false;
+let priceBarcodeScanner=null,barcodeStarting=false,busy=false,iosReader=null,iosStream=null,iosTimer=null;
 function clean(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
@@ -132,12 +132,49 @@ async function chooseCamera(){
  const standard=rear.find(c=>/back camera$|rear camera$|caméra arrière$/i.test((c.label||"").trim())) || rear.find(c=>!/ultra|wide angle|telephoto|téléobjectif|macro|0[.,]5/i.test(c.label||""));
  return standard ? {deviceId:{exact:standard.id}} : {facingMode:"environment"};
 }
+function loadZXing(){
+ return new Promise((resolve,reject)=>{
+  if(window.ZXing?.BrowserMultiFormatReader)return resolve();
+  const script=document.createElement("script");
+  script.src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
+  script.onload=()=>window.ZXing?.BrowserMultiFormatReader?resolve():reject(new Error("ZXing absent"));
+  script.onerror=()=>reject(new Error("Chargement ZXing impossible"));
+  document.head.appendChild(script);
+ });
+}
+async function startIOSScanner(){
+ await loadZXing();
+ const host=$("priceBarcodeReader");host.innerHTML="";
+ const video=document.createElement("video");video.setAttribute("playsinline","");video.setAttribute("autoplay","");video.muted=true;
+ video.style.cssText="width:100%;height:100%;object-fit:cover";
+ host.appendChild(video);
+ const formats=[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.ITF,ZXing.BarcodeFormat.CODABAR];
+ const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+ iosReader=new ZXing.BrowserMultiFormatReader(hints,180);
+ let errors=0;
+ const constraints={audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}};
+ iosReader.decodeFromConstraints(constraints,video,async(result,error)=>{
+  if(!barcodeStarting||!busy)return;
+  if(result){
+   const value=clean(result.getText());if(!value)return;
+   barcodeStarting=false;
+   await stopScanner(false);
+   document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");
+   await lookup(value);
+  }else if(error && !(error instanceof ZXing.NotFoundException)){
+   if(++errors===10)$("scanHelp").innerHTML="<strong>Lecture active, sans reconnaissance</strong>Essayez un autre code-barres EAN. Si cela persiste, signalez-le.";
+  }
+ }).catch(e=>{console.error("ZXing iPhone:",e);$("scanHelp").innerHTML="<strong>Erreur du lecteur iPhone</strong>"+String(e.message||e);});
+ $("scanHelp").innerHTML="<strong>Lecteur iPhone alternatif actif</strong>Centrez les barres dans l'image et maintenez le téléphone immobile.";
+ iosTimer=setTimeout(()=>{if(barcodeStarting&&busy)$("scanHelp").innerHTML="<strong>Aucun code reconnu après 15 secondes</strong>Essayez un code EAN de produit courant. Si rien ne fonctionne, indiquez le modèle d’iPhone et sa version iOS.";},15000);
+}
 async function startScanner(){
  if(busy||barcodeStarting)return;
- if(typeof Html5Qrcode==="undefined"){$("status").textContent="Le module scanner n’a pas pu être chargé. Rechargez la page.";return}
+ if(!isIOS()&&typeof Html5Qrcode==="undefined"){$("status").textContent="Le module scanner n’a pas pu être chargé. Rechargez la page.";return}
  if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
- busy=true;barcodeStarting=true;$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
+ busy=true;barcodeStarting=true;$("scanHelp").innerHTML="<strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur";$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
  try{
+   if(isIOS()){await startIOSScanner();barcodeStarting=true;$("status").textContent="Lecteur iPhone actif.";return;}
    const camera=await chooseCamera();
    priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),useBarCodeDetectorIfSupported:!isIOS(),verbose:false});
    const onDecoded=async decodedText=>{
@@ -149,19 +186,23 @@ async function startScanner(){
      await lookup(value);
    };
    // No forced 16:9 aspect ratio: iOS can crop the barcode in portrait mode.
-   const config={fps:isIOS()?15:10,qrbox:(w,h)=>({width:Math.max(1,Math.min(w-12,Math.floor(w*.92),500)),height:Math.max(1,Math.min(h-12,180))})};
+   const config=isIOS()?{fps:10,videoConstraints:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}}:{fps:10,qrbox:(w,h)=>({width:Math.max(1,Math.min(w-12,Math.floor(w*.92),500)),height:Math.max(1,Math.min(h-12,180))})};
    try{await priceBarcodeScanner.start(camera,config,onDecoded,()=>{});}
    catch(firstError){
      console.warn("Première tentative caméra:",firstError);
      try{await priceBarcodeScanner.clear()}catch{}
      priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),useBarCodeDetectorIfSupported:!isIOS(),verbose:false});
-     await priceBarcodeScanner.start({facingMode:"environment"},{fps:10,qrbox:(w,h)=>({width:Math.max(1,Math.min(w-12,Math.floor(w*.9),450)),height:Math.max(1,Math.min(h-12,160))})},onDecoded,()=>{});
+     await priceBarcodeScanner.start({facingMode:"environment"},{fps:10},onDecoded,()=>{});
    }
    $("status").textContent="Scanner actif.";
+   if(isIOS()) $("scanHelp").innerHTML="<strong>Lecture iPhone sur toute l’image</strong>Éloignez le code de 15 à 25 cm, avec un bon éclairage. Le cadre orange est indicatif.";
  }catch(e){console.warn("Scanner prix:",e);barcodeStarting=false;await stopScanner();busy=false;$("status").textContent="Impossible d’ouvrir la caméra. Vérifiez l’autorisation caméra et utilisez Safari/Chrome en HTTPS."}
 }
 async function stopScanner(closeOverlay=true){
  const scanner=priceBarcodeScanner;priceBarcodeScanner=null;barcodeStarting=false;
+ if(iosTimer){clearTimeout(iosTimer);iosTimer=null}
+ if(iosReader){try{iosReader.reset()}catch(e){console.warn(e)}iosReader=null}
+ const v=$("priceBarcodeReader").querySelector("video");if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}
  if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){console.warn(e)}try{scanner.clear()}catch(e){}}
  if(closeOverlay)$("scanner").classList.remove("open");
 }
