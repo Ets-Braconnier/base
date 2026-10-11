@@ -63,7 +63,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 </section>
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
-let priceBarcodeScanner=null,barcodeStarting=false,busy=false,iosReader=null,iosStream=null,iosTimer=null;
+let priceBarcodeScanner=null,barcodeStarting=false,busy=false,iosReader=null,iosControls=null,iosTimer=null;
 function clean(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
@@ -125,12 +125,10 @@ function barcodeFormats(){
 }
 function isIOS(){return /iPad|iPhone|iPod/i.test(navigator.userAgent)|| (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)}
 async function chooseCamera(){
- // Prefer the standard rear-facing camera. On iPhone the last device can be ultra-wide/telephoto.
  let cameras=[];try{cameras=await Html5Qrcode.getCameras()}catch(e){console.warn("Liste caméras:",e)}
- if(!cameras.length)return {facingMode:"environment"};
- const rear=cameras.filter(c=>/back|rear|environment|arrière|arriere|world/i.test(c.label||""));
- const standard=rear.find(c=>/back camera$|rear camera$|caméra arrière$/i.test((c.label||"").trim())) || rear.find(c=>!/ultra|wide angle|telephoto|téléobjectif|macro|0[.,]5/i.test(c.label||""));
- return standard ? {deviceId:{exact:standard.id}} : {facingMode:"environment"};
+ if(!cameras||!cameras.length)return null;
+ const rear=cameras.find(c=>/back|rear|environment|arrière|arriere|world/i.test(c.label||""));
+ return (rear||cameras[cameras.length-1]||cameras[0]).id;
 }
 function loadZXing(){
  return new Promise((resolve,reject)=>{
@@ -183,27 +181,20 @@ async function startScanner(){
  busy=true;barcodeStarting=true;$("scanHelp").innerHTML="<strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur";$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
  try{
    if(isIOS()){await startIOSScanner();$("status").textContent="Lecteur iPhone actif.";return;}
-   const camera=await chooseCamera();
-   priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),useBarCodeDetectorIfSupported:!isIOS(),verbose:false});
-   const onDecoded=async decodedText=>{
-     if(!busy||!barcodeStarting)return;
+   // Android : configuration d'origine, inchangée.
+   const cameraId=await chooseCamera();
+   if(!cameraId)throw new Error("Aucune caméra détectée");
+   priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),verbose:false});
+   await priceBarcodeScanner.start(cameraId,{fps:10,qrbox:{width:Math.min(500,Math.max(250,window.innerWidth-60)),height:180},aspectRatio:1.777778},async decodedText=>{
+     if(!busy)return;
      const value=clean(decodedText);if(!value)return;
      barcodeStarting=false;
      await stopScanner(false);
      document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");
      await lookup(value);
-   };
-   // No forced 16:9 aspect ratio: iOS can crop the barcode in portrait mode.
-   const config=isIOS()?{fps:10,videoConstraints:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}}:{fps:10,qrbox:(w,h)=>({width:Math.max(1,Math.min(w-12,Math.floor(w*.92),500)),height:Math.max(1,Math.min(h-12,180))})};
-   try{await priceBarcodeScanner.start(camera,config,onDecoded,()=>{});}
-   catch(firstError){
-     console.warn("Première tentative caméra:",firstError);
-     try{await priceBarcodeScanner.clear()}catch{}
-     priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),useBarCodeDetectorIfSupported:!isIOS(),verbose:false});
-     await priceBarcodeScanner.start({facingMode:"environment"},{fps:10},onDecoded,()=>{});
-   }
+   },()=>{});
+   barcodeStarting=false;
    $("status").textContent="Scanner actif.";
-   if(isIOS()) $("scanHelp").innerHTML="<strong>Lecture iPhone sur toute l’image</strong>Éloignez le code de 15 à 25 cm, avec un bon éclairage. Le cadre orange est indicatif.";
  }catch(e){console.warn("Scanner prix:",e);barcodeStarting=false;await stopScanner();busy=false;$("status").textContent="Impossible d’ouvrir la caméra. Vérifiez l’autorisation caméra et utilisez Safari/Chrome en HTTPS."}
 }
 async function stopScanner(closeOverlay=true){
