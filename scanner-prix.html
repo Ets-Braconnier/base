@@ -106,11 +106,26 @@ function showChoices(groups){
  });
  views("choices")
 }
+// Vérifie la clé EAN-13, sans supposer un préfixe fixe.
+function validEAN13(code){
+ if(!/^\d{13}$/.test(code))return false;
+ const sum=[...code.slice(0,12)].reduce((acc,d,i)=>acc+Number(d)*(i%2?3:1),0);
+ return (10-sum%10)%10===Number(code[12]);
+}
+function restoreMissingEANPrefix(code){
+ if(!/^\d{12}$/.test(code))return null;
+ const matches=[];
+ for(let n=0;n<=9;n++){
+  const candidate=String(n)+code;
+  if(validEAN13(candidate))matches.push(candidate);
+ }
+ return matches.length===1?matches[0]:null;
+}
 async function lookup(raw){
  const q=clean(raw);if(!q)return;
  views("home");$("status").textContent="Recherche de l'article…";
- const url=API+"/scanner/recherche?q="+encodeURIComponent(q)+"&limit=100";
- async function load(enseigne){
+ async function load(enseigne,term){
+  const url=API+"/scanner/recherche?q="+encodeURIComponent(term)+"&limit=100";
   for(let attempt=0;attempt<2;attempt++){
    try{
     const opt={cache:"no-store"};
@@ -120,13 +135,33 @@ async function lookup(raw){
     const j=await r.json();
     if(j.ok===false||!Array.isArray(j.articles))throw new Error("Réponse API invalide");
     return {ok:true,articles:j.articles.map(a=>({...a,_enseigne:enseigne}))};
-   }catch(e){console.warn("Recherche "+enseigne+" (essai "+(attempt+1)+"):",e);}
+   }catch(e){console.warn("Recherche "+enseigne+" (essai "+(attempt+1)+"):",e)}
   }
   return {ok:false,articles:[]};
  }
+ function matches(brac,outilsud,term){
+  return [...brac.articles,...outilsud.articles]
+   .map(a=>({a,m:matchType(a,term)})).filter(x=>x.m>0)
+   .sort((x,y)=>y.m-x.m).map(x=>x.a);
+ }
  try{
-  const [brac,outilsud]=await Promise.all([load("braconnier"),load("outilsud")]);
-  const rows=[...brac.articles,...outilsud.articles].map(a=>({a,m:matchType(a,q)})).filter(x=>x.m>0).sort((x,y)=>y.m-x.m).map(x=>x.a);
+  let term=q;
+  let [brac,outilsud]=await Promise.all([load("braconnier",term),load("outilsud",term)]);
+  let rows=matches(brac,outilsud,term);
+  // Seulement si aucune correspondance exacte n'a été trouvée pour les 12 chiffres.
+  // On reconstruit un EAN-13 à partir de sa clé de contrôle, sans préfixe imposé.
+  // Si l'une des bases est inaccessible, on ne prétend pas avoir tout vérifié.
+  const restored=rows.length===0&&brac.ok&&outilsud.ok?restoreMissingEANPrefix(q):null;
+  if(restored && restored!==q){
+   const [b2,o2]=await Promise.all([load("braconnier",restored),load("outilsud",restored)]);
+   const restoredRows=matches(b2,o2,restored);
+   if(restoredRows.length){
+    rows=restoredRows;term=restored;brac=b2;outilsud=o2;
+    console.info("EAN-13 rétabli après lecture tronquée :",q,"→",restored);
+   }else if(!b2.ok||!o2.ok){
+    brac=b2;outilsud=o2;
+   }
+  }
   if(rows.length){
    const groups=groupSameProducts(rows);
    if(groups.length===1)showArticle(groups[0].article,groups[0].stores);
@@ -134,13 +169,13 @@ async function lookup(raw){
    return;
   }
   finishScanLookup();
-  $("notFoundCode").textContent="Code lu : "+q;
+  $("notFoundCode").textContent="Code lu : "+q+(restored?" · EAN-13 possible : "+restored:"");
   if(!brac.ok||!outilsud.ok){
    $("notFound").querySelector("h2").textContent="Recherche incomplète";
    $("notFoundMessage").textContent="Impossible de vérifier "+(!brac.ok&&!outilsud.ok?"les deux bases":(!brac.ok?"Braconnier":"Outilsud"))+". Réessayez : l'article n'est pas nécessairement absent.";
   }else{
    $("notFound").querySelector("h2").textContent="Article introuvable";
-   $("notFoundMessage").textContent="Aucune correspondance exacte trouvée. Comparez le code lu ci-dessous avec celui imprimé sur l'article.";
+   $("notFoundMessage").textContent="Aucune correspondance exacte trouvée. Comparez le code lu avec celui imprimé sur l'article.";
   }
   views("notfound");
  }catch(e){
@@ -148,6 +183,7 @@ async function lookup(raw){
   finishScanLookup();views("home");$("status").textContent="Erreur de recherche. Réessayez.";
  }
 }
+
 function barcodeFormats(){
  if(typeof Html5QrcodeSupportedFormats==="undefined")return undefined;
  return [Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF,Html5QrcodeSupportedFormats.CODABAR];
