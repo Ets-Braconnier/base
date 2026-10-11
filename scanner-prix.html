@@ -134,11 +134,11 @@ async function chooseCamera(){
 }
 function loadZXing(){
  return new Promise((resolve,reject)=>{
-  if(window.ZXing?.BrowserMultiFormatReader)return resolve();
+  if(window.ZXingBrowser?.BrowserMultiFormatReader)return resolve();
   const script=document.createElement("script");
-  script.src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
-  script.onload=()=>window.ZXing?.BrowserMultiFormatReader?resolve():reject(new Error("ZXing absent"));
-  script.onerror=()=>reject(new Error("Chargement ZXing impossible"));
+  script.src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js";
+  script.onload=()=>window.ZXingBrowser?.BrowserMultiFormatReader?resolve():reject(new Error("Module ZXingBrowser absent"));
+  script.onerror=()=>reject(new Error("Impossible de charger le module ZXingBrowser"));
   document.head.appendChild(script);
  });
 }
@@ -146,27 +146,35 @@ async function startIOSScanner(){
  await loadZXing();
  const host=$("priceBarcodeReader");host.innerHTML="";
  const video=document.createElement("video");video.setAttribute("playsinline","");video.setAttribute("autoplay","");video.muted=true;
- video.style.cssText="width:100%;height:100%;object-fit:cover";
- host.appendChild(video);
- const formats=[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.ITF,ZXing.BarcodeFormat.CODABAR];
- const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
- iosReader=new ZXing.BrowserMultiFormatReader(hints,180);
- let errors=0;
- const constraints={audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}}};
- iosReader.decodeFromConstraints(constraints,video,async(result,error)=>{
+ video.style.cssText="width:100%;height:100%;object-fit:cover";host.appendChild(video);
+ iosReader=new ZXingBrowser.BrowserMultiFormatReader();
+ let attempts=0,otherErrors=0;
+ $("scanHelp").innerHTML="<strong>Initialisation du lecteur iPhone…</strong>";
+ const constraints={audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}};
+ iosControls=await iosReader.decodeFromConstraints(constraints,video,(result,error)=>{
   if(!barcodeStarting||!busy)return;
+  attempts++;
   if(result){
    const value=clean(result.getText());if(!value)return;
    barcodeStarting=false;
-   await stopScanner(false);
-   document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");
-   await lookup(value);
-  }else if(error && !(error instanceof ZXing.NotFoundException)){
-   if(++errors===10)$("scanHelp").innerHTML="<strong>Lecture active, sans reconnaissance</strong>Essayez un autre code-barres EAN. Si cela persiste, signalez-le.";
+   Promise.resolve().then(async()=>{
+    await stopScanner(false);
+    document.querySelector(".camera").style.display="none";$("scanHelp").style.display="none";$("scanLoading").classList.add("show");
+    await lookup(value);
+   });
+  }else if(error && error.name!=="NotFoundException" && error.name!=="ChecksumException" && error.name!=="FormatException"){
+   otherErrors++;
+   if(otherErrors<=3)console.warn("ZXing iPhone:",error);
   }
- }).catch(e=>{console.error("ZXing iPhone:",e);$("scanHelp").innerHTML="<strong>Erreur du lecteur iPhone</strong>"+String(e.message||e);});
- $("scanHelp").innerHTML="<strong>Lecteur iPhone alternatif actif</strong>Centrez les barres dans l'image et maintenez le téléphone immobile.";
- iosTimer=setTimeout(()=>{if(barcodeStarting&&busy)$("scanHelp").innerHTML="<strong>Aucun code reconnu après 15 secondes</strong>Essayez un code EAN de produit courant. Si rien ne fonctionne, indiquez le modèle d’iPhone et sa version iOS.";},15000);
+ });
+ $("scanHelp").innerHTML="<strong>Lecteur iPhone actif</strong>Présentez un code-barres horizontal, à 15–25 cm.";
+ iosTimer=setInterval(()=>{
+  if(!barcodeStarting||!busy)return;
+  const ready=video.readyState>=2;
+  $("scanHelp").innerHTML="<strong>Diagnostic iPhone : "+(ready?"vidéo active":"vidéo non prête")+"</strong>"+
+    "Image : "+video.videoWidth+" × "+video.videoHeight+" · Analyses : "+attempts+" · Erreurs : "+otherErrors+
+    "<div style=\"margin-top:5px\">"+(attempts?"Lecture en cours, aucun code reconnu.":"Le moteur ne reçoit pas encore d'images exploitables.")+"</div>";
+ },2500);
 }
 async function startScanner(){
  if(busy||barcodeStarting)return;
@@ -174,7 +182,7 @@ async function startScanner(){
  if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
  busy=true;barcodeStarting=true;$("scanHelp").innerHTML="<strong>Placez le code-barres dans le cadre</strong>EAN · N° article magasin · Référence article fournisseur";$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
  try{
-   if(isIOS()){await startIOSScanner();barcodeStarting=true;$("status").textContent="Lecteur iPhone actif.";return;}
+   if(isIOS()){await startIOSScanner();$("status").textContent="Lecteur iPhone actif.";return;}
    const camera=await chooseCamera();
    priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),useBarCodeDetectorIfSupported:!isIOS(),verbose:false});
    const onDecoded=async decodedText=>{
@@ -200,8 +208,9 @@ async function startScanner(){
 }
 async function stopScanner(closeOverlay=true){
  const scanner=priceBarcodeScanner;priceBarcodeScanner=null;barcodeStarting=false;
- if(iosTimer){clearTimeout(iosTimer);iosTimer=null}
- if(iosReader){try{iosReader.reset()}catch(e){console.warn(e)}iosReader=null}
+ if(iosTimer){clearInterval(iosTimer);iosTimer=null}
+ if(iosControls){try{iosControls.stop()}catch(e){console.warn(e)}iosControls=null}
+ if(iosReader){iosReader=null}
  const v=$("priceBarcodeReader").querySelector("video");if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}
  if(scanner){try{if(scanner.isScanning)await scanner.stop()}catch(e){console.warn(e)}try{scanner.clear()}catch(e){}}
  if(closeOverlay)$("scanner").classList.remove("open");
