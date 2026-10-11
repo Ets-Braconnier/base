@@ -64,6 +64,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
 let priceBarcodeScanner=null,barcodeStarting=false,busy=false;
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 function clean(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
@@ -135,10 +136,11 @@ async function startScanner(){
  if(!navigator.mediaDevices?.getUserMedia){$("status").textContent="Caméra non disponible.";return}
  busy=true;barcodeStarting=true;$("scanLoading").classList.remove("show");$("scanHelp").style.display="";document.querySelector(".camera").style.display="";$("scanner").classList.add("open");
  try{
-   const cameraId=await chooseCamera();
-   if(!cameraId)throw new Error("Aucune caméra détectée");
-   priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),verbose:false});
-   await priceBarcodeScanner.start(cameraId,{fps:10,qrbox:{width:Math.min(500,Math.max(250,window.innerWidth-60)),height:180},aspectRatio:1.777778},async decodedText=>{
+   const cameraChoice=isIOS?{facingMode:"environment"}:await chooseCamera();
+   if(!cameraChoice)throw new Error("Aucune caméra détectée");
+   priceBarcodeScanner=new Html5Qrcode("priceBarcodeReader",{formatsToSupport:barcodeFormats(),verbose:false,useBarCodeDetectorIfSupported:false});
+   const scanConfig=isIOS?{fps:12,disableFlip:true,videoConstraints:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}}:{fps:10,qrbox:{width:Math.min(500,Math.max(250,window.innerWidth-60)),height:180},aspectRatio:1.777778};
+   await priceBarcodeScanner.start(cameraChoice,scanConfig,async decodedText=>{
      if(!busy)return;
      const value=clean(decodedText);if(!value)return;
      barcodeStarting=false;
@@ -148,7 +150,8 @@ async function startScanner(){
    },()=>{});
    barcodeStarting=false;
    $("status").textContent="Scanner actif.";
- }catch(e){console.warn("Scanner prix:",e);barcodeStarting=false;await stopScanner();busy=false;$("status").textContent="Impossible d’ouvrir la caméra. Vérifiez l’autorisation caméra et utilisez Safari/Chrome en HTTPS."}
+   if(isIOS)$("scanHelp").innerHTML="<strong>Placez le code-barres au centre</strong>Rapprochez ou éloignez légèrement le téléphone pour faire la mise au point.";
+ }catch(e){console.warn("Scanner prix:",e);barcodeStarting=false;await stopScanner();busy=false;$("status").textContent="Scanner indisponible : "+(e?.message||"vérifiez la caméra et rechargez la page.")}
 }
 async function stopScanner(closeOverlay=true){
  const scanner=priceBarcodeScanner;priceBarcodeScanner=null;barcodeStarting=false;
