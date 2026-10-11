@@ -63,7 +63,7 @@ h1{font-size:clamp(28px,5vw,42px);line-height:1.08;text-align:center;margin:9px 
 </section>
 <script>
 const API="https://braconnier-api.sebastien-025.workers.dev", $=id=>document.getElementById(id);
-let priceBarcodeScanner=null,barcodeStarting=false,busy=false,iosReader=null,iosControls=null,iosTimer=null;
+let priceBarcodeScanner=null,barcodeStarting=false,busy=false,iosReader=null,iosControls=null;
 function clean(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/i,"").replace(/^#\s*/,"").trim()}
 function norm(v){return String(v??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function euro(v){const n=Number(v);return Number.isFinite(n)?new Intl.NumberFormat("fr-BE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(n):"Prix indisponible"}
@@ -215,12 +215,10 @@ async function startIOSScanner(){
  const video=document.createElement("video");video.setAttribute("playsinline","");video.setAttribute("autoplay","");video.muted=true;
  video.style.cssText="width:100%;height:100%;object-fit:cover";host.appendChild(video);
  iosReader=new ZXingBrowser.BrowserMultiFormatReader();
- let attempts=0,otherErrors=0;
  $("scanHelp").innerHTML="<strong>Initialisation du lecteur iPhone…</strong>";
  const constraints={audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}};
  iosControls=await iosReader.decodeFromConstraints(constraints,video,(result,error)=>{
   if(!barcodeStarting||!busy)return;
-  attempts++;
   if(result){
    const value=clean(result.getText());if(!value)return;
    barcodeStarting=false;
@@ -230,18 +228,11 @@ async function startIOSScanner(){
     await lookup(value);
    });
   }else if(error && error.name!=="NotFoundException" && error.name!=="ChecksumException" && error.name!=="FormatException"){
-   otherErrors++;
-   if(otherErrors<=3)console.warn("ZXing iPhone:",error);
+   console.warn("ZXing iPhone (erreur inhabituelle):",error);
   }
  });
  $("scanHelp").innerHTML="<strong>Lecteur iPhone actif</strong>Présentez un code-barres horizontal, à 15–25 cm.";
- iosTimer=setInterval(()=>{
-  if(!barcodeStarting||!busy)return;
-  const ready=video.readyState>=2;
-  $("scanHelp").innerHTML="<strong>Diagnostic iPhone : "+(ready?"vidéo active":"vidéo non prête")+"</strong>"+
-    "Image : "+video.videoWidth+" × "+video.videoHeight+" · Analyses : "+attempts+" · Erreurs : "+otherErrors+
-    "<div style=\"margin-top:5px\">"+(attempts?"Lecture en cours, aucun code reconnu.":"Le moteur ne reçoit pas encore d'images exploitables.")+"</div>";
- },2500);
+
 }
 async function startScanner(){
  if(busy||barcodeStarting)return;
@@ -268,7 +259,6 @@ async function startScanner(){
 }
 async function stopScanner(closeOverlay=true){
  const scanner=priceBarcodeScanner;priceBarcodeScanner=null;barcodeStarting=false;
- if(iosTimer){clearInterval(iosTimer);iosTimer=null}
  if(iosControls){try{iosControls.stop()}catch(e){console.warn(e)}iosControls=null}
  if(iosReader){iosReader=null}
  const v=$("priceBarcodeReader").querySelector("video");if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null}
