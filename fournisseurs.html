@@ -227,6 +227,8 @@ input,select,button{font-family:inherit}
 
 /* Scanner code-barres mobile */
 .product-search-wrap{position:relative;min-width:0}
+.product-search-mode{display:flex;align-items:center;gap:9px;margin-top:7px;font-size:12px;color:#536477}
+.product-search-mode select{padding:6px 9px;font-size:12px;flex:1;min-width:0;border-radius:6px;background:#fff}
 .product-search-wrap #pq{width:100%;box-sizing:border-box}
 .barcode-scan-btn{display:none;position:absolute;right:3px;top:3px;width:29px;height:29px;min-height:0!important;padding:0!important;border:0;border-radius:6px;background:var(--brand);color:#fff;align-items:center;justify-content:center;z-index:2}
 .barcode-scan-btn svg{width:17px;height:17px;display:block}
@@ -333,7 +335,7 @@ body{background:#f7f7f7!important}
 </div>
 <div class="sub" style="margin-top:-5px">Clique sur un compteur pour afficher directement les fournisseurs concernés. Les fournisseurs sans catégorie sont indiqués séparément dans le filtre « Sans catégorie ».</div>
 <div class="box"><div class="controls">
-<input id="fq" placeholder="Fournisseur…"/><div class="product-search-wrap"><input id="pq" placeholder="Matériau / produit…"/><button aria-label="Scanner un code-barres" class="barcode-scan-btn" id="barcodeScanBtn" onclick="openBarcodeScanner()" title="Scanner un code-barres" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z" fill="currentColor"></path></svg></button></div>
+<input id="fq" placeholder="Fournisseur…"/><div class="product-search-wrap"><input id="pq" placeholder="Matériau / produit…"/><button aria-label="Scanner un code-barres" class="barcode-scan-btn" id="barcodeScanBtn" onclick="openBarcodeScanner()" title="Scanner un code-barres" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z" fill="currentColor"></path></svg></button><label class="product-search-mode" for="productResultMode">Afficher : <select id="productResultMode" aria-label="Afficher les fournisseurs ou les produits"><option value="suppliers">Fournisseurs correspondants</option><option value="articles">Produits correspondants</option></select></label></div>
 <select id="sq">
 <option value="">Tous les statuts</option>
 <option value="Présence trouvée">Actifs vérifiés</option>
@@ -673,18 +675,19 @@ async function openServerArticleByData(fournisseurId,numeroArticle,numFournisseu
 
 function render(){
  const fqv=n(fq.value),pqv=n(pq.value),sqv=sq.value,iv=inactiveFilter.value,empty=emptyOnly.checked;
- if(pqv && (SERVER_PRODUCT_RESULTS.length || SERVER_PRODUCT_SEARCHING || SERVER_PRODUCT_SEARCH_ERROR)){
+ if(pqv && productResultMode.value==="articles"){
   renderServerArticleResults(fqv,sqv,iv,empty);
   return;
  }
  let r=DATA.filter(x=>
    (!fqv||n(x.fournisseur_source+" "+x.nom_actuel).includes(fqv)) &&
-   (!pqv||productMatch(pq.value,DATA.indexOf(x))) &&
+   (!pqv||(SERVER_PRODUCT_SEARCHING ? false : SERVER_PRODUCT_SEARCH_ERROR ? productMatch(pq.value,DATA.indexOf(x)) : SERVER_PRODUCT_SUPPLIER_IDS.has(Number(x._d1_id)))) &&
    (!sqv||x.statut_source===sqv) &&
    (!iv||(x.statut_source==="Inactif confirmé / signalé" && x.type_inactif===iv)) &&
    (!empty||!x.categories||x.categories.length===0)
  );
  stats.textContent=r.length+" fournisseur(s) affiché(s) sur "+DATA.length;
+ if(pqv && !SERVER_PRODUCT_SEARCHING && !SERVER_PRODUCT_SEARCH_ERROR && SERVER_PRODUCT_RESULTS.length>=300)stats.textContent+=" — résultats limités aux 300 premiers articles";
  if(pq.value.trim()&&SERVER_PRODUCT_SEARCHING)stats.textContent+=" — recherche Cloudflare en cours…";
  else if(pq.value.trim()&&SERVER_PRODUCT_SEARCH_ERROR)stats.textContent+=" — recherche articles impossible. Réessaie.";
  cards.innerHTML=r.map(x=>{const ix=DATA.indexOf(x),ac=Number.isFinite(x._d1_nb_articles)?x._d1_nb_articles:(ARTICLES[String(ix)]||[]).length;return `<div class="card">
@@ -705,7 +708,7 @@ function render(){
  syncFilterHighlights();
 }
 function resetAll(){
- fq.value="";pq.value="";sq.value="";inactiveFilter.value="";emptyOnly.checked=false;render();
+ fq.value="";pq.value="";productResultMode.value="suppliers";sq.value="";inactiveFilter.value="";emptyOnly.checked=false;scheduleServerProductSearch(true);render();
 }
 document.querySelectorAll(".kpi").forEach(el=>el.addEventListener("click",()=>{
  sq.value=el.dataset.status||"";
@@ -2224,6 +2227,7 @@ function scheduleServerProductSearch(immediate=false){
  if(!pq.value.trim()){runServerProductSearch();return;}
  SERVER_PRODUCT_TIMER=setTimeout(runServerProductSearch,immediate?0:220);
 }
+productResultMode.addEventListener("change",render);
 pq.addEventListener("input",()=>scheduleServerProductSearch(false));
 
 loadSuppliersFromD1();
