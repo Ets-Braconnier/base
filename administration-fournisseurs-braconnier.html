@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><style id="admin-access-lock">html{visibility:hidden}</style><script id="admin-access-check">(async()=>{try{const token=sessionStorage.getItem('braconnier_portal_token_v3');if(!token)throw new Error('Connexion requise');const r=await fetch('https://braconnier-auth.sebastien-025.workers.dev/auth/check',{headers:{Authorization:'Bearer '+token},cache:'no-store'});if(!r.ok)throw new Error('Session invalide');const u=await r.json();if(!(u.role==='admin'||u.is_admin===true||u.user?.role==='admin'||u.user?.is_admin===true))throw new Error('Rôle administrateur non confirmé');document.documentElement.style.visibility='visible';}catch(e){document.documentElement.innerHTML='<head><meta charset="utf-8"><title>Accès réservé</title><style id="admin-page-layout">.admin-page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;background:#fff;border:1px solid #e1e6ec;border-radius:15px;padding:22px 26px;margin:14px 0 22px}.admin-page-heading span{font-size:11px;font-weight:800;color:#e07800;letter-spacing:.12em}.admin-page-heading h2{margin:6px 0;font-size:26px;color:#21364b}.admin-page-heading p{margin:0;color:#6d7d8f;font-size:13px}.admin-page-heading a{padding:12px 16px;border-radius:9px;background:#f3f6f9;color:#26435d;text-decoration:none;font-weight:700;font-size:13px}@media(max-width:650px){.admin-page-heading{flex-wrap:wrap}}</style></head><body style="font:16px Arial;padding:48px;background:#f5f7fa;color:#24354a"><h1>Accès administrateur réservé</h1><p>Votre session ne confirme pas les droits administrateur.</p><a href="fournisseurs.html">Retour à la recherche</a></body>';document.documentElement.style.visibility='visible';}})();</script>
+<html lang="fr"><head>
 <script>
 const AUTH_API_PORTAL="https://braconnier-auth.sebastien-025.workers.dev";
 const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
@@ -16,7 +16,7 @@ const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
 })();
 </script>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>Administration fournisseurs — Braconnier</title>
+<title>Base fournisseur Braconnier</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
@@ -309,8 +309,53 @@ body{background:#f7f7f7!important}
 .unified-brand h1{color:#29343d!important}.unified-brand p{color:#6b7280!important}
 .unified-menu-btn{background:#f47b00!important}.unified-logout{background:#f1f3f5!important;color:#29343d!important;border:1px solid #dde2e6!important}
 </style>
-</head><body>
-<div class="wrap"><div class="admin-page-heading"><div><span>ESPACE RÉSERVÉ</span><h2>Administration des fournisseurs</h2><p>Suivi, statuts, importations, exportations et gestion des fiches.</p></div><a href="fournisseurs.html">← Retour à la recherche</a></div>
+<style id="admin-password-gate-css">
+html:not(.admin-verified) body{visibility:hidden}
+#admin-login-gate{visibility:visible!important;position:fixed;inset:0;z-index:2147483647;background:#f3f6fa;display:grid;place-items:center;font-family:Arial,sans-serif;color:#18344b;padding:18px}
+#admin-login-gate .panel{width:min(100%,430px);padding:36px;border-radius:20px;background:white;box-shadow:0 16px 55px #142e481a;border:1px solid #e1e8ee}
+#admin-login-gate .mark{display:inline-grid;place-items:center;width:46px;height:46px;border-radius:13px;background:#f47a00;color:white;font-size:24px;font-weight:800}
+#admin-login-gate h1{font-size:25px;margin:18px 0 10px}
+#admin-login-gate p{font-size:14px;color:#65768a;line-height:1.6}
+#admin-login-gate label{font-size:12px;font-weight:700;display:block;margin:24px 0 8px}
+#admin-login-gate input{width:100%;box-sizing:border-box;padding:14px;border-radius:10px;border:1px solid #cbd7e3;font-size:16px}
+#admin-login-gate button{width:100%;border:0;border-radius:10px;background:#ed7900;color:white;font-weight:750;padding:14px;cursor:pointer;margin-top:14px}
+#admin-login-gate .error{color:#b42318;font-size:13px;min-height:18px}
+#admin-login-gate a{color:#3e6684;font-size:13px}
+</style>
+<script id="admin-password-gate">
+(function(){
+  const API='https://braconnier-api.sebastien-025.workers.dev';
+  const back='fournisseurs.html';
+  const enseigne='braconnier';
+  function init(){
+    const wrapper=document.createElement('div');
+    wrapper.id='admin-login-gate';
+    wrapper.innerHTML='<div class="panel"><div class="mark">B</div><h1>Administration fournisseurs</h1><p>Accès réservé aux administrateurs. Saisissez le mot de passe administrateur existant pour accéder aux outils de gestion.</p><form id="admin-gate-form"><label for="admin-gate-password">Mot de passe administrateur</label><input id="admin-gate-password" type="password" required autocomplete="current-password" placeholder="Mot de passe administrateur"><div id="admin-gate-error" class="error" role="alert"></div><button type="submit">Accéder à l’administration</button></form><p><a href="'+back+'">← Retour à la recherche</a></p></div>';
+    document.body.appendChild(wrapper);
+    const form=wrapper.querySelector('form');
+    const btn=wrapper.querySelector('button');
+    const error=wrapper.querySelector('#admin-gate-error');
+    form.addEventListener('submit',async function(ev){
+      ev.preventDefault();
+      btn.disabled=true;btn.textContent='Vérification…';error.textContent='';
+      try{
+        const headers={'X-Admin-Password':wrapper.querySelector('input').value};
+        if(enseigne==='outilsud')headers['X-Enseigne']='outilsud';
+        const res=await fetch(API+'/admin/test',{method:'POST',headers,cache:'no-store'});
+        if(!res.ok)throw new Error(res.status===401?'Mot de passe administrateur incorrect.':'Vérification impossible ('+res.status+').');
+        const data=await res.json();
+        if(data.ok!==true||data.admin!==true)throw new Error('Autorisation non confirmée.');
+        document.documentElement.classList.add('admin-verified');
+        wrapper.remove();
+      }catch(e){error.textContent=e.message||'Connexion impossible.';}
+      finally{btn.disabled=false;btn.textContent='Accéder à l’administration';}
+    });
+    wrapper.querySelector('input').focus();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script></head><body>
+<div class="wrap">
 <header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Base fournisseurs</h1><p>Ets Braconnier · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a class="active" href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <div class="admin-heading"><h2>Administration des fournisseurs</h2><p>Suivi, contrôles, imports, exports et gestion. <a href="fournisseurs.html">Retour à la recherche</a></p></div><div class="kpis">
 <button class="kpi" data-status="" id="filterAll" type="button"><b id="kTotal">0</b><span>Tous les fournisseurs</span></button>
