@@ -373,9 +373,33 @@ body{background:#f7f8fb!important}
 </style>
 <link rel="stylesheet" href="portal-theme.css">
 <script src="portal-nav.js" defer></script>
+<style id="supplier-header-shortcuts-style">
+.unified-header .supplier-header-shortcuts{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.unified-header .supplier-shortcut{border:0;border-radius:9px;background:#ff8500;color:#fff;font-weight:750;padding:11px 15px;cursor:pointer;white-space:nowrap;font-size:13px}
+.unified-header .supplier-shortcut:hover{background:#e87500}
+.unified-header .supplier-shortcut[aria-pressed="true"]{background:#1c293c;color:#fff}
+.unified-header .unified-tools{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:680px){.unified-header .supplier-header-shortcuts{width:100%;justify-content:flex-start}.unified-header .supplier-shortcut{flex:1}.unified-header .unified-tools{width:100%;justify-content:flex-end}}
+</style>
+<script id="supplier-header-shortcuts-script">
+document.addEventListener('DOMContentLoaded',function(){
+ var shortcuts=document.querySelectorAll('.supplier-header-shortcuts [data-search-mode]');
+ var mode=document.getElementById('productResultMode');
+ function refresh(){shortcuts.forEach(function(btn){btn.setAttribute('aria-pressed',String((mode?mode.value:'suppliers')===btn.dataset.searchMode))})}
+ shortcuts.forEach(function(btn){btn.addEventListener('click',function(){
+  var desired=btn.dataset.searchMode;
+  if(mode){mode.value=desired;mode.dispatchEvent(new Event('change',{bubbles:true}))}
+  refresh();
+  var input=document.getElementById(desired==='articles'?'pq':'fq');
+  if(input){input.scrollIntoView({behavior:'smooth',block:'center'});input.focus({preventScroll:true})}
+ })});
+ if(mode)mode.addEventListener('change',refresh);
+ refresh();
+});
+</script>
 </head><body>
 <div class="wrap">
-<header class="unified-header"><div class="unified-brand"><div class="unified-logo">O</div><div><h1>Base fournisseurs</h1><p>Outilsud · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a class="active" href="fournisseurs-outilsud.html">Base fournisseurs</a><a href="inventaire-outilsud.html">Inventaire</a><a href="commandes-outilsud.html">Commandes</a><a href="notes.html">Notes</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
+<header class="unified-header"><div class="unified-brand"><div class="unified-logo">O</div><div><h1>Base fournisseurs</h1><p>Outilsud · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a class="active" href="fournisseurs-outilsud.html">Base fournisseurs</a><a href="inventaire-outilsud.html">Inventaire</a><a href="commandes-outilsud.html">Commandes</a><a href="notes.html">Notes</a></nav></div><div class="supplier-header-shortcuts" role="group" aria-label="Accès fournisseurs et articles"><button type="button" class="supplier-shortcut" data-search-mode="suppliers">▦ Fournisseurs</button><button type="button" class="supplier-shortcut" data-search-mode="articles">▤ Articles</button></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <section class="admin-hidden"><div class="kpis">
 <button class="kpi" data-status="" id="filterAll" type="button"><b id="kTotal">0</b><span>Tous les fournisseurs</span></button>
 <button class="kpi" data-status="Présence trouvée" id="filterActive" type="button"><b id="kActive">0</b><span>Actifs vérifiés</span></button>
