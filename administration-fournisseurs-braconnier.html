@@ -354,7 +354,10 @@ html:not(.admin-verified) body{visibility:hidden}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
-</script></head><body>
+</script>
+<link rel="stylesheet" href="portal-theme.css">
+<script src="portal-nav.js" defer></script>
+</head><body>
 <div class="wrap">
 <header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Base fournisseurs</h1><p>Ets Braconnier · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a class="active" href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <div class="admin-heading"><h2>Administration des fournisseurs</h2><p>Suivi, contrôles, imports, exports et gestion. <a href="fournisseurs.html">Retour à la recherche</a></p></div><div class="kpis">

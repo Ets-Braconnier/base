@@ -343,7 +343,24 @@ body{background:#f7f7f7!important}
 .supplier-extra-content .tags{margin:0 0 7px!important}
 @media(max-width:1050px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:650px){.cards{grid-template-columns:1fr!important}.controls{grid-template-columns:1fr!important}.search-hero h2{font-size:20px!important}}
-</style></head><body>
+
+/* Barre de recherche sur une seule ligne, sans espace perdu */
+.box:has(> .controls){padding:12px 14px!important}
+.box > .controls{display:grid!important;grid-template-columns:minmax(180px,1fr) minmax(240px,1.35fr) minmax(210px,.85fr)!important;gap:14px!important;align-items:end!important}
+.box > .controls > .clean-search,.box > .controls > .product-search-wrap,.box > .controls > .product-search-mode{min-width:0;width:100%;margin:0!important}
+.box > .controls .clean-search>span{display:block;font-size:11px!important;line-height:15px;margin-bottom:6px!important}
+.box > .controls .clean-input{height:40px!important;box-sizing:border-box}
+.box > .controls .clean-input input{height:38px!important}
+.box > .controls .product-search-mode{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important;font-size:11px!important;line-height:15px!important;color:#708197!important;font-weight:800;letter-spacing:.4px}
+.box > .controls .product-search-mode select{width:100%!important;height:40px!important;min-height:40px!important;box-sizing:border-box;border:1px solid #d6e0eb!important;border-radius:9px!important;padding:0 10px!important;font-size:13px!important;color:#20354b;background:#fff}
+.box > .controls .barcode-scan-btn{top:25px!important}
+.box > .stats{margin-top:7px!important;font-size:11px!important}
+@media(max-width:900px){.box > .controls{grid-template-columns:minmax(160px,1fr) minmax(220px,1.2fr)!important}.box > .controls > .product-search-mode{grid-column:1/-1}}
+@media(max-width:600px){.box > .controls{grid-template-columns:1fr!important;gap:10px!important}.box > .controls > .product-search-mode{grid-column:auto}}
+</style>
+<link rel="stylesheet" href="portal-theme.css">
+<script src="portal-nav.js" defer></script>
+</head><body>
 <div class="wrap">
 <header class="unified-header"><div class="unified-brand"><div class="unified-logo">B</div><div><h1>Base fournisseurs</h1><p>Ets Braconnier · recherche, articles et documents</p></div></div><div class="unified-tools"><div class="unified-menu-wrap"><button aria-controls="unifiedMenu" aria-expanded="false" class="unified-menu-btn" id="unifiedMenuBtn" type="button"><span class="unified-menu-icon">☰</span> Menu</button><nav aria-label="Navigation principale" class="unified-menu" id="unifiedMenu"><a href="index.html">Accueil</a><a href="calculs.html">Calculs</a><a href="netstore.html">NetStore</a><a class="active" href="fournisseurs.html">Base fournisseurs</a><a href="inventaire.html">Inventaire</a><a href="commandes.html">Commandes</a><a href="notes.html">Notes</a><a href="electricite.html">Électricité</a></nav></div><button class="unified-logout" onclick="portalLogout()" type="button">Déconnexion</button></div></header>
 <section class="admin-hidden"><div class="kpis">
@@ -369,7 +386,7 @@ body{background:#f7f7f7!important}
 </div>
 <div class="sub" style="margin-top:-5px">Clique sur un compteur pour afficher directement les fournisseurs concernés. Les fournisseurs sans catégorie sont indiqués séparément dans le filtre « Sans catégorie ».</div>
 </section><div class="search-hero"><div><div class="search-overline">ANNUAIRE PROFESSIONNEL</div><h2>Trouvez le bon fournisseur</h2><p>Recherchez par entreprise ou par matériau, puis choisissez le type de résultat.</p></div><a class="admin-link" href="administration-fournisseurs-braconnier.html" >Administration</a></div><div class="box"><div class="controls">
-<label class="clean-search"><span>FOURNISSEUR</span><div class="clean-input"><span>⌕</span><input id="fq" type="search" placeholder="Rechercher une entreprise…" autocomplete="off"/></div></label><div class="product-search-wrap"><label class="clean-search"><span>MATÉRIAU OU PRODUIT</span><div class="clean-input"><span>⌕</span><input id="pq" type="search" placeholder="Ex. porte, ciment, outillage…" autocomplete="off"/></div></label><button aria-label="Scanner un code-barres" class="barcode-scan-btn" id="barcodeScanBtn" onclick="openBarcodeScanner()" title="Scanner un code-barres" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z" fill="currentColor"></path></svg></button><label class="product-search-mode" for="productResultMode">Afficher : <select id="productResultMode" aria-label="Afficher les fournisseurs ou les produits"><option value="suppliers">Fournisseurs correspondants</option><option value="articles">Produits correspondants</option></select></label></div>
+<label class="clean-search"><span>FOURNISSEUR</span><div class="clean-input"><span>⌕</span><input id="fq" type="search" placeholder="Rechercher une entreprise…" autocomplete="off"/></div></label><div class="product-search-wrap"><label class="clean-search"><span>MATÉRIAU OU PRODUIT</span><div class="clean-input"><span>⌕</span><input id="pq" type="search" placeholder="Ex. porte, ciment, outillage…" autocomplete="off"/></div></label><button aria-label="Scanner un code-barres" class="barcode-scan-btn" id="barcodeScanBtn" onclick="openBarcodeScanner()" title="Scanner un code-barres" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h3v2H5v3H3V5Zm13-2h3a2 2 0 0 1 2 2v3h-2V5h-3V3ZM3 16h2v3h3v2H5a2 2 0 0 1-2-2v-3Zm16 0h2v3a2 2 0 0 1-2 2h-3v-2h3v-3ZM7 8h1v8H7V8Zm3 0h2v8h-2V8Zm4 0h1v8h-1V8Zm3 0h2v8h-2V8Z" fill="currentColor"></path></svg></button></div><label class="product-search-mode" for="productResultMode">Afficher : <select id="productResultMode" aria-label="Afficher les fournisseurs ou les produits"><option value="suppliers">Fournisseurs correspondants</option><option value="articles">Produits correspondants</option></select></label>
 <div class="admin-hidden"><select id="sq">
 <option value="">Tous les statuts</option>
 <option value="Présence trouvée">Actifs vérifiés</option>

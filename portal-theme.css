@@ -1,0 +1,17 @@
+/* Portail Braconnier & Outilsud — charte commune */
+:root{--portal-navy:#1c293c;--portal-orange:#ff8500;--portal-border:#dbe3ed;--portal-bg:#f3f6fa}
+html{scroll-padding-top:85px}body{background-color:var(--portal-bg)}
+.portal-nav{position:relative;z-index:40;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 22px;background:var(--portal-navy);color:white;border-radius:12px;box-shadow:0 4px 14px #14213624;margin:0 0 22px;font-family:Arial,sans-serif}
+.portal-brand{display:flex;align-items:center;gap:11px;color:white;text-decoration:none;font-weight:800;font-size:18px;line-height:1.1;white-space:nowrap}.portal-mark{display:grid;place-items:center;background:var(--portal-orange);border-radius:9px;width:38px;height:38px;color:white;font-size:23px}.portal-brand small{display:block;font-size:11px;color:#cbd5e1;font-weight:600}
+.portal-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px;flex:1}.portal-links a{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border-radius:8px;text-decoration:none;color:#f7f9fd;font-weight:700;font-size:13px;white-space:nowrap}.portal-links a:hover,.portal-links a:focus-visible{background:#34445b;color:#fff}.portal-links a.is-current{background:var(--portal-orange);color:#fff}.portal-tenant{font-size:12px;font-weight:800;border:1px solid #60718b;border-radius:20px;padding:6px 11px;color:#f5f8ff}
+.portal-nav button.portal-toggle{display:none;background:#34445b;border:1px solid #566a84;border-radius:7px;color:#fff;padding:8px 11px;cursor:pointer}
+.portal-nav + .unified-header{margin-top:0}.portal-nav ~ .unified-header .unified-menu-wrap{display:none!important}
+.portal-nav ~ .unified-header{border-radius:12px!important}.portal-nav ~ .unified-header .unified-brand h1{letter-spacing:-.025em}
+.portal-nav ~ main,.portal-nav ~ section{max-width:100%}
+body :is(input:not([type=checkbox]):not([type=radio]),select,textarea){border-radius:9px}body :is(button,.btn){transition:filter .15s,transform .15s}body :is(button,.btn):hover{filter:brightness(.97)}
+@media(max-width:1100px){.portal-nav{gap:9px;padding:10px 12px}.portal-links a{padding:9px 8px;font-size:12px}}
+@media(max-width:760px){.portal-nav{justify-content:space-between}.portal-nav button.portal-toggle{display:block}.portal-links{display:none;flex:0 0 100%;flex-direction:column;align-items:stretch}.portal-nav.is-open .portal-links{display:flex}.portal-links a{padding:12px}.portal-tenant{margin-left:auto}}
+/* Fournisseurs : recherche équilibrée, trois cartes par ligne, infos secondaires repliées */
+body.portal-suppliers .portal-nav{margin-bottom:16px}
+body.portal-suppliers .search-grid,body.portal-suppliers .search-row{align-items:end}
+body.portal-suppliers :is(.supplier-card,.fournisseur-card){min-width:0}
