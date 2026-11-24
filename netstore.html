@@ -3,14 +3,19 @@
 <html lang="fr"><head>
 <script id="portal-access-guard">
 (function(){
-  const TOKEN_KEY="braconnier_portal_token_v3";
-  const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev";
-  document.documentElement.style.visibility="hidden";
-  const token=sessionStorage.getItem(TOKEN_KEY);
-  if(!token){ location.replace(new URL("/base/index.html",location.origin).href); return; }
-  fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"})
-    .then(r=>{if(!r.ok)throw new Error("unauthorized"); document.documentElement.style.visibility="";})
-    .catch(()=>{sessionStorage.removeItem(TOKEN_KEY);location.replace(new URL("/base/index.html",location.origin).href);});
+ const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const home=new URL("index.html",location.href).href;
+ document.documentElement.style.visibility="hidden";
+ if(!token){location.replace(home);return;}
+ function unavailable(){
+  function show(){const panel=document.createElement("div");panel.setAttribute("role","alert");panel.style.cssText="position:fixed;inset:0;z-index:2147483647;visibility:visible;background:#f4f6f9;display:grid;place-content:center;text-align:center;padding:24px;font:16px Arial;color:#1c293c";const text=document.createElement("p");text.textContent="Vérification de connexion indisponible. Votre session est conservée.";const retry=document.createElement("button");retry.textContent="Réessayer";retry.onclick=()=>location.reload();panel.append(text,retry);document.body.append(panel);}
+  if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
+ }
+ fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
+  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(!r.ok){unavailable();return;}
+  document.documentElement.style.visibility="";
+ }).catch(unavailable);
 })();
 </script>
 
@@ -448,13 +453,9 @@ async function requirePortalSession(){
   if(!token){window.location.replace("index.html");return false;}
   try{
     const r=await fetch(AUTH_API+"/auth/check",{headers:{"Authorization":"Bearer "+token}});
-    if(!r.ok)throw new Error();
-    return true;
-  }catch(e){
-    sessionStorage.removeItem(PORTAL_TOKEN_KEY);
-    window.location.replace("index.html");
-    return false;
-  }
+    if(r.status===401||r.status===403){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return false;}
+    return r.ok;
+  }catch(e){return false;}
 }
 requirePortalSession();
 

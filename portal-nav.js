@@ -3,7 +3,9 @@
 const script=document.currentScript;
 const base=script&&script.src?new URL('.',script.src):new URL('./',location.href);
 const page=decodeURIComponent(location.pathname.split('/').pop()||'index.html');
-const tenant=page.includes('outilsud')?'Outilsud':'Braconnier';
+const shared=['index.html','notes.html','calculs.html','scanner-prix.html','electricite.html'].includes(page);
+const tenant=shared?(sessionStorage.getItem('portal_enseigne')==='outilsud'?'Outilsud':'Braconnier'):(page.includes('outilsud')?'Outilsud':'Braconnier');
+if(!shared)sessionStorage.setItem('portal_enseigne',tenant.toLowerCase());
 const suffix=tenant==='Outilsud'?'-outilsud':'';
 const sections=[
  ['Accueil','index.html','home'],

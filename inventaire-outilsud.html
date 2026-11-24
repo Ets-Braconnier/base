@@ -316,7 +316,7 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show")
 async function portalCheck(){
   const token=sessionStorage.getItem(PORTAL_TOKEN_KEY);
   if(!token)return; // page inventaire conserve son propre login fonctionnel même hors portail
-  try{const r=await fetch(AUTH_API_PORTAL+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(!r.ok)sessionStorage.removeItem(PORTAL_TOKEN_KEY)}catch{}
+  try{const r=await fetch(AUTH_API_PORTAL+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.status===401||r.status===403)sessionStorage.removeItem(PORTAL_TOKEN_KEY)}catch{}
 }
 
 function loadLocalInventory(){

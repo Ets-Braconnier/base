@@ -3,14 +3,19 @@
 <html lang="fr"><head>
 <script id="portal-access-guard">
 (function(){
-  const TOKEN_KEY="braconnier_portal_token_v3";
-  const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev";
-  document.documentElement.style.visibility="hidden";
-  const token=sessionStorage.getItem(TOKEN_KEY);
-  if(!token){ location.replace(new URL("/base/index.html",location.origin).href); return; }
-  fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"})
-    .then(r=>{if(!r.ok)throw new Error("unauthorized"); document.documentElement.style.visibility="";})
-    .catch(()=>{sessionStorage.removeItem(TOKEN_KEY);location.replace(new URL("/base/index.html",location.origin).href);});
+ const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const home=new URL("index.html",location.href).href;
+ document.documentElement.style.visibility="hidden";
+ if(!token){location.replace(home);return;}
+ function unavailable(){
+  function show(){const panel=document.createElement("div");panel.setAttribute("role","alert");panel.style.cssText="position:fixed;inset:0;z-index:2147483647;visibility:visible;background:#f4f6f9;display:grid;place-content:center;text-align:center;padding:24px;font:16px Arial;color:#1c293c";const text=document.createElement("p");text.textContent="Vérification de connexion indisponible. Votre session est conservée.";const retry=document.createElement("button");retry.textContent="Réessayer";retry.onclick=()=>location.reload();panel.append(text,retry);document.body.append(panel);}
+  if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
+ }
+ fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
+  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(!r.ok){unavailable();return;}
+  document.documentElement.style.visibility="";
+ }).catch(unavailable);
 })();
 </script>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Calculs — Ets Braconnier</title><script>
@@ -85,5 +90,5 @@ function renderChoices(){
  if(!choices.children.length)choices.textContent='Aucun calculateur trouvé.';
 }
 document.getElementById('search').addEventListener('input',renderChoices);
-(async()=>{const token=sessionStorage.getItem('braconnier_portal_token_v3');if(!token){location.replace('index.html');return}try{const r=await fetch('https://braconnier-auth.sebastien-025.workers.dev/auth/check',{headers:{Authorization:'Bearer '+token}});if(!r.ok){portalLogout();return}document.getElementById('status').hidden=true;document.getElementById('workspace').hidden=false;renderChoices();selectTool(tools.find(t=>t.file==='calculateurs/cubage-beton.html')||tools[0])}catch{document.getElementById('status').textContent='Connexion indisponible. Rechargez la page pour réessayer.'}})();
+(async()=>{const token=sessionStorage.getItem('braconnier_portal_token_v3');if(!token){location.replace('index.html');return}try{const r=await fetch('https://braconnier-auth.sebastien-025.workers.dev/auth/check',{headers:{Authorization:'Bearer '+token}});if(r.status===401||r.status===403){portalLogout();return}if(!r.ok)throw new Error("Service indisponible");document.getElementById('status').hidden=true;document.getElementById('workspace').hidden=false;renderChoices();selectTool(tools.find(t=>t.file==='calculateurs/cubage-beton.html')||tools[0])}catch{document.getElementById('status').textContent='Connexion indisponible. Rechargez la page pour réessayer.'}})();
 </script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>
