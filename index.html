@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="fr">
-<head>
+<head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Portail Braconnier & Outilsud</title>
@@ -18,7 +20,7 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 @media(max-width:560px){.shell{width:100%;margin:0;border-radius:0;border-left:0;border-right:0;min-height:100vh}.login-wrap{padding:34px 18px}.choose,.dashboard{padding:20px}.apps{grid-template-columns:1fr}.portal-head{padding:14px 16px}.dash-title{align-items:flex-start}.dash-brand img{width:150px}.brand-login{gap:12px}}
 </style>
 <script>
-(()=>{const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";const home=new URL("index.html",window.location.href).href;window.portalLogout=function(){sessionStorage.removeItem(tokenKey);sessionStorage.removeItem("braconnier_api_access_password_v1");try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};window.addEventListener("storage",e=>{if(e.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home)})})();
+(()=>{const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";const home=new URL("index.html",window.location.href).href;window.portalLogout=function(){localStorage.removeItem(tokenKey);sessionStorage.removeItem("braconnier_api_access_password_v1");try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};window.addEventListener("storage",e=>{if(e.key===logoutKey){localStorage.removeItem(tokenKey);window.location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted&&!localStorage.getItem(tokenKey))window.location.replace(home)})})();
 </script>
 </head>
 <body>
@@ -67,9 +69,9 @@ const loginWrap=document.getElementById("loginWrap"),portal=document.getElementB
 function showPortal(){loginWrap.style.display="none";portal.classList.add("open");showChoose()}
 function showChoose(){choose.style.display="block";brac.classList.remove("open");outil.classList.remove("open");changeBrand.style.display="none"}
 function openBrand(name){sessionStorage.setItem("portal_enseigne",name);choose.style.display="none";(name==="braconnier"?brac:outil).classList.add("open");changeBrand.style.display=""}
-async function validateExisting(){const token=sessionStorage.getItem(TOKEN_KEY);if(!token)return;if(!sessionStorage.getItem(API_ACCESS_PASSWORD_KEY)){sessionStorage.removeItem(TOKEN_KEY);return;}try{const r=await fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.ok)showPortal();else if(r.status===401||r.status===403){sessionStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(API_ACCESS_PASSWORD_KEY)}else{msg.textContent="Service de connexion indisponible. Rechargez la page."}}catch(e){msg.textContent="Service de connexion indisponible. Rechargez la page."}}
+async function validateExisting(){const token=localStorage.getItem(TOKEN_KEY);if(!token)return;try{const r=await fetch(AUTH_API+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.ok)showPortal();else if(r.status===401||r.status===403){localStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(API_ACCESS_PASSWORD_KEY)}else{msg.textContent="Service de connexion indisponible. Rechargez la page."}}catch(e){msg.textContent="Service de connexion indisponible. Rechargez la page."}}
 validateExisting();
-form.addEventListener("submit",async e=>{e.preventDefault();if(!password.value)return;submit.disabled=true;submit.textContent="Vérification…";msg.textContent="";try{const r=await fetch(AUTH_API+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:password.value})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.token)throw new Error(j.error||"Mot de passe incorrect.");sessionStorage.setItem(TOKEN_KEY,j.token);sessionStorage.setItem(API_ACCESS_PASSWORD_KEY,password.value);password.value="";showPortal()}catch(err){msg.textContent=err.message||"Accès refusé.";password.select()}finally{submit.disabled=false;submit.textContent="Se connecter"}});
+form.addEventListener("submit",async e=>{e.preventDefault();if(!password.value)return;submit.disabled=true;submit.textContent="Vérification…";msg.textContent="";try{const r=await fetch(AUTH_API+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:password.value})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.token)throw new Error(j.error||"Mot de passe incorrect.");localStorage.setItem(TOKEN_KEY,j.token);password.value="";showPortal()}catch(err){msg.textContent=err.message||"Accès refusé.";password.select()}finally{submit.disabled=false;submit.textContent="Se connecter"}});
 document.querySelectorAll("[data-brand]").forEach(el=>el.addEventListener("click",()=>openBrand(el.dataset.brand)));document.querySelectorAll(".back").forEach(el=>el.addEventListener("click",showChoose));changeBrand.addEventListener("click",showChoose);document.getElementById("logout").addEventListener("click",()=>portalLogout());
 </script>
 </body></html>

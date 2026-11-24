@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr"><head>
+<html lang="fr"><head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <script>const AUTH_API_PORTAL="https://braconnier-auth.sebastien-025.workers.dev";const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";</script>
 <script id="portal-access-guard">
 (function(){
- const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const key="braconnier_portal_token_v3", token=localStorage.getItem(key);
  const home=new URL("index.html",location.href).href;
  document.documentElement.style.visibility="hidden";
  if(!token){location.replace(home);return;}
@@ -12,7 +14,7 @@
   if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
  }
  fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
-  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(r.status===401||r.status===403){localStorage.removeItem(key);location.replace(home);return;}
   if(!r.ok){unavailable();return;}
   document.documentElement.style.visibility="";
  }).catch(unavailable);
@@ -285,15 +287,15 @@ input,select,button{font-family:inherit}
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
  window.portalLogout=function(){
-  sessionStorage.removeItem(tokenKey);
+  localStorage.removeItem(tokenKey);
   try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}
   window.location.replace(home);
  };
  window.addEventListener("storage",event=>{
-  if(event.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}
+  if(event.key===logoutKey){localStorage.removeItem(tokenKey);window.location.replace(home)}
  });
  window.addEventListener("pageshow",event=>{
-  if(event.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home);
+  if(event.persisted&&!localStorage.getItem(tokenKey))window.location.replace(home);
  });
 })();
 
@@ -1607,12 +1609,12 @@ globalArticleImportInput.addEventListener("change",e=>{
 const FILE_API="https://braconnier-auth.sebastien-025.workers.dev";
 let currentSupplierFiles=[];
 
-function portalToken(){return sessionStorage.getItem("braconnier_portal_token_v3")||""}
+function portalToken(){return localStorage.getItem("braconnier_portal_token_v3")||""}
 let storageBlocked=false;
 async function loadStorageIndicator(){
  try{
   const r=await fetch(FILE_API+"/files/storage",{headers:{"Authorization":"Bearer "+portalToken()}});
-  if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+  if(r.status===401){localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
   const j=await r.json().catch(()=>({}));
   if(!r.ok||!j.ok)throw new Error(j.error||"Stockage indisponible");
   const pct=Math.max(0,Math.min(100,Number(j.percent||0)));
@@ -1677,7 +1679,7 @@ async function loadSupplierFiles(){
   const r=await fetch(FILE_API+"/files?fournisseur_id="+encodeURIComponent(fid),{
    headers:{"Authorization":"Bearer "+portalToken()}
   });
-  if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+  if(r.status===401){localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
   const j=await r.json().catch(()=>({}));
   if(!r.ok||!j.ok)throw new Error(j.error||"Erreur de chargement");
   currentSupplierFiles=Array.isArray(j.files)?j.files:[];
@@ -1741,7 +1743,7 @@ async function uploadSupplierFiles(files){
     },
     body:file
    });
-   if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+   if(r.status===401){localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
    const j=await r.json().catch(()=>({}));
    if(!r.ok||!j.ok)throw new Error(j.message||j.error||("Erreur HTTP "+r.status));
    done++;
@@ -1795,7 +1797,7 @@ async function openSupplierFile(encodedKey,fileName){
   const r=await fetch(FILE_API+"/files/object?key="+encodeURIComponent(key),{
    headers:{"Authorization":"Bearer "+portalToken()}
   });
-  if(r.status===401){previewWindow.close();sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+  if(r.status===401){previewWindow.close();localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
   if(!r.ok){const j=await r.json().catch(()=>({}));previewWindow.close();alert(j.error||"Ouverture impossible.");return}
   const blob=await r.blob();
   if(isExcelSupplierFile(fileName)){
@@ -1816,7 +1818,7 @@ async function downloadSupplierFile(encodedKey){
  const r=await fetch(FILE_API+"/files/object?key="+encodeURIComponent(key),{
   headers:{"Authorization":"Bearer "+portalToken()}
  });
- if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+ if(r.status===401){localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
  if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.error||"Téléchargement impossible.");return}
  const blob=await r.blob();
  const cd=r.headers.get("Content-Disposition")||"";
@@ -1832,7 +1834,7 @@ async function deleteSupplierFile(encodedKey,name){
  const r=await fetch(FILE_API+"/files/object?key="+encodeURIComponent(key),{
   method:"DELETE",headers:{"Authorization":"Bearer "+portalToken()}
  });
- if(r.status===401){sessionStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
+ if(r.status===401){localStorage.removeItem("braconnier_portal_token_v3");location.replace("index.html");return}
  const j=await r.json().catch(()=>({}));
  if(!r.ok||!j.ok){alert(j.error||"Suppression impossible.");return}
  await Promise.all([loadSupplierFiles(),loadStorageIndicator()]);
@@ -1860,7 +1862,7 @@ window.fetch=function(input,init={}){
   if(target.startsWith(API_BASE)){
     const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
     if(!headers.has("Authorization")){
-      const token=sessionStorage.getItem(PORTAL_TOKEN_KEY)||"";
+      const token=localStorage.getItem(PORTAL_TOKEN_KEY)||"";
       if(token)headers.set("Authorization","Bearer "+token);
     }
     init={...init,headers};

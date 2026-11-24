@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head>
+<head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <script id="portal-access-guard">
 (function(){
- const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const key="braconnier_portal_token_v3", token=localStorage.getItem(key);
  const home=new URL("index.html",location.href).href;
  document.documentElement.style.visibility="hidden";
  if(!token){location.replace(home);return;}
@@ -13,7 +15,7 @@
   if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
  }
  fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
-  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(r.status===401||r.status===403){localStorage.removeItem(key);location.replace(home);return;}
   if(!r.ok){unavailable();return;}
   document.documentElement.style.visibility="";
  }).catch(unavailable);
@@ -86,7 +88,7 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f5f6;color:va
 <div class="overlay" id="noteOverlay"><div class="modal"><div class="modal-head"><h2 id="modalTitle">Nouvelle note</h2><button id="closeModal">Fermer ✕</button></div><div class="form"><div class="field"><label>TITRE</label><input id="fTitle" placeholder="Ex. MAPEI – nouveau tarif"/></div><div class="field"><label>NOTE</label><textarea id="fContent" placeholder="Écrire ici…"></textarea></div><div class="row"><div class="field"><label>CATÉGORIE</label><select id="fCategory"><option>À faire</option><option>À commander</option><option>Faire offre</option><option>En cours</option><option>Terminé</option><option>Autre</option></select><input id="fCategoryOther" type="text" placeholder="Écrire votre catégorie…" style="display:none;margin-top:7px"/></div><div class="field"><label>PRIORITÉ</label><select id="fPriority"><option value="normal">Normale</option><option value="low">Faible</option><option value="high">Haute</option><option value="urgent">Urgente</option></select></div></div><div class="row"><div class="field"><label>VISIBILITÉ</label><select id="fVisibility"><option value="private">Personnelle</option><option value="shared">Partagée avec…</option><option value="team">Toute l'équipe</option></select></div><div class="field"><label>ASSIGNER À</label><select id="fAssigned"><option value="">Personne</option></select></div></div><div class="field" id="shareField" style="display:none"><label>PARTAGER AVEC</label><div class="share-users" id="shareUsers"></div></div><div class="row"><div class="field"><label>RAPPEL</label><input id="fReminder" type="datetime-local"/></div><div class="field"><label>OPTIONS</label><label style="display:flex;gap:7px;align-items:center;height:38px;font-size:10px"><input id="fPinned" style="width:auto" type="checkbox"/> Épingler cette note</label></div></div><div class="check-editor"><div class="check-editor-head"><b>Checklist</b><button id="addCheck" type="button">+ Ajouter</button></div><div id="checkEditor"></div></div><div class="form-actions"><button class="archive" id="archiveBtn" style="display:none">Archiver</button><button class="danger" id="deleteBtn" style="display:none">Supprimer</button><button class="cancel" id="cancelBtn">Annuler</button><button class="save" id="saveBtn">Enregistrer</button></div></div></div></div>
 <div class="admin-panel" id="adminPanel"><div class="admin-shell"><div class="admin-top"><h2>Administration des profils</h2><button id="adminClose">Fermer ✕</button></div><div class="admin-body" id="adminUsers"></div></div></div>
 <div class="toast" id="toast"></div>
-<script>function portalLogout(){sessionStorage.removeItem("braconnier_portal_token_v3");try{localStorage.setItem("braconnier_portal_logout",Date.now()+":"+Math.random())}catch{}location.replace("index.html")}
+<script>function portalLogout(){localStorage.removeItem("braconnier_portal_token_v3");try{localStorage.setItem("braconnier_portal_logout",Date.now()+":"+Math.random())}catch{}location.replace("index.html")}
 
 const API_BASE="https://braconnier-notes.sebastien-025.workers.dev";
 const TOKEN_KEY="braconnier_notes_token_v1";

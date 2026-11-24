@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head>
+<head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <script id="portal-access-guard">
 (function(){
- const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const key="braconnier_portal_token_v3", token=localStorage.getItem(key);
  const home=new URL("index.html",location.href).href;
  document.documentElement.style.visibility="hidden";
  if(!token){location.replace(home);return;}
@@ -13,7 +15,7 @@
   if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
  }
  fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
-  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(r.status===401||r.status===403){localStorage.removeItem(key);location.replace(home);return;}
   if(!r.ok){unavailable();return;}
   document.documentElement.style.visibility="";
  }).catch(unavailable);
@@ -49,9 +51,9 @@ body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(
 (() => {
  const tokenKey="braconnier_portal_token_v3", logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
- window.portalLogout=function(){sessionStorage.removeItem(tokenKey);try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};
- window.addEventListener("storage",e=>{if(e.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}});
- if(!sessionStorage.getItem(tokenKey)) window.location.replace(home);
+ window.portalLogout=function(){localStorage.removeItem(tokenKey);try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}window.location.replace(home)};
+ window.addEventListener("storage",e=>{if(e.key===logoutKey){localStorage.removeItem(tokenKey);window.location.replace(home)}});
+ if(!localStorage.getItem(tokenKey)) window.location.replace(home);
 })();
 </script>
 <style id="unified-portal-header-style">

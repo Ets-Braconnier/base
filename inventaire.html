@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 
 <html lang="fr">
-<head>
+<head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>Inventaire Braconnier</title>
@@ -266,7 +268,7 @@ window.fetch=function(input,init={}){
   if(target.startsWith(API_BASE)){
     const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
     if(!headers.has("Authorization")){
-      const token=sessionStorage.getItem("braconnier_portal_token_v3")||"";
+      const token=localStorage.getItem("braconnier_portal_token_v3")||"";
       if(token)headers.set("Authorization","Bearer "+token);
     }
     init={...init,headers};
@@ -301,9 +303,9 @@ function niceDate(v){try{return new Date(v).toLocaleString("fr-BE")}catch{return
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2200)}
 
 async function portalCheck(){
-  const token=sessionStorage.getItem(PORTAL_TOKEN_KEY);
+  const token=localStorage.getItem(PORTAL_TOKEN_KEY);
   if(!token)return; // page inventaire conserve son propre login fonctionnel même hors portail
-  try{const r=await fetch(AUTH_API_PORTAL+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.status===401||r.status===403)sessionStorage.removeItem(PORTAL_TOKEN_KEY)}catch{}
+  try{const r=await fetch(AUTH_API_PORTAL+"/auth/check",{headers:{Authorization:"Bearer "+token}});if(r.status===401||r.status===403)localStorage.removeItem(PORTAL_TOKEN_KEY)}catch{}
 }
 
 function loadLocalInventory(){

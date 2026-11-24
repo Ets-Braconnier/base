@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 
-<html lang="fr"><head>
+<html lang="fr"><head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <script id="portal-access-guard">
 (function(){
- const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const key="braconnier_portal_token_v3", token=localStorage.getItem(key);
  const home=new URL("index.html",location.href).href;
  document.documentElement.style.visibility="hidden";
  if(!token){location.replace(home);return;}
@@ -12,7 +14,7 @@
   if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
  }
  fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
-  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(r.status===401||r.status===403){localStorage.removeItem(key);location.replace(home);return;}
   if(!r.ok){unavailable();return;}
   document.documentElement.style.visibility="";
  }).catch(unavailable);
@@ -23,15 +25,15 @@
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
  window.portalLogout=function(){
-  sessionStorage.removeItem(tokenKey);
+  localStorage.removeItem(tokenKey);
   try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}
   window.location.replace(home);
  };
  window.addEventListener("storage",event=>{
-  if(event.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}
+  if(event.key===logoutKey){localStorage.removeItem(tokenKey);window.location.replace(home)}
  });
  window.addEventListener("pageshow",event=>{
-  if(event.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home);
+  if(event.persisted&&!localStorage.getItem(tokenKey))window.location.replace(home);
  });
 })();
 
@@ -90,5 +92,5 @@ function renderChoices(){
  if(!choices.children.length)choices.textContent='Aucun calculateur trouvé.';
 }
 document.getElementById('search').addEventListener('input',renderChoices);
-(async()=>{const token=sessionStorage.getItem('braconnier_portal_token_v3');if(!token){location.replace('index.html');return}try{const r=await fetch('https://braconnier-auth.sebastien-025.workers.dev/auth/check',{headers:{Authorization:'Bearer '+token}});if(r.status===401||r.status===403){portalLogout();return}if(!r.ok)throw new Error("Service indisponible");document.getElementById('status').hidden=true;document.getElementById('workspace').hidden=false;renderChoices();selectTool(tools.find(t=>t.file==='calculateurs/cubage-beton.html')||tools[0])}catch{document.getElementById('status').textContent='Connexion indisponible. Rechargez la page pour réessayer.'}})();
+(async()=>{const token=localStorage.getItem('braconnier_portal_token_v3');if(!token){location.replace('index.html');return}try{const r=await fetch('https://braconnier-auth.sebastien-025.workers.dev/auth/check',{headers:{Authorization:'Bearer '+token}});if(r.status===401||r.status===403){portalLogout();return}if(!r.ok)throw new Error("Service indisponible");document.getElementById('status').hidden=true;document.getElementById('workspace').hidden=false;renderChoices();selectTool(tools.find(t=>t.file==='calculateurs/cubage-beton.html')||tools[0])}catch{document.getElementById('status').textContent='Connexion indisponible. Rechargez la page pour réessayer.'}})();
 </script><script id="unified-menu-script">(function(){const b=document.getElementById('unifiedMenuBtn'),m=document.getElementById('unifiedMenu');if(!b||!m)return;function close(){m.classList.remove('open');b.setAttribute('aria-expanded','false')}b.addEventListener('click',function(e){e.stopPropagation();const o=m.classList.toggle('open');b.setAttribute('aria-expanded',o?'true':'false')});m.addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()})})();</script></body></html>

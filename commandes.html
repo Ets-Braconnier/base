@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 
-<html lang="fr"><head>
+<html lang="fr"><head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/>
 <title>Commandes fournisseurs — Ets Braconnier</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -56,7 +58,7 @@ window.fetch=function(input,init={}){
   if(target.startsWith(API_BASE)){
     const headers=new Headers(init.headers||(typeof input!=="string"&&input.headers)||{});
     if(!headers.has("Authorization")){
-      const token=sessionStorage.getItem("braconnier_portal_token_v3")||"";
+      const token=localStorage.getItem("braconnier_portal_token_v3")||"";
       if(token)headers.set("Authorization","Bearer "+token);
     }
     init={...init,headers};
@@ -71,7 +73,7 @@ function cleanScanValue(v){return String(v||"").trim().replace(/^(?:in\s*)?#\s*/
 function safeNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function articleKey(a){const base=String(a.ean||"").trim()||("A:"+String(a.numero_article||"")+"|F:"+String(a.num_fournisseur||""));return "S:"+String(a.fournisseur_id??"")+"|"+base}
 function toast(t){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),1800)}
-function portalLogout(){sessionStorage.removeItem(TOKEN_KEY);try{localStorage.setItem(LOGOUT_KEY,Date.now()+":"+Math.random())}catch{}location.replace("index.html")}
+function portalLogout(){localStorage.removeItem(TOKEN_KEY);try{localStorage.setItem(LOGOUT_KEY,Date.now()+":"+Math.random())}catch{}location.replace("index.html")}
 async function apiJson(path,options){const r=await fetch(API_BASE+path,options),j=await r.json().catch(()=>({}));if(!r.ok||j.ok===false)throw new Error(j.erreur||("HTTP "+r.status));return j}
 function supplierName(f){return f.nom||f.nom_actuel||f.fournisseur_source||("Fournisseur "+f.id)}
 function renderSupplierResults(q=""){const box=$("supplierResults"),n=norm(q);const list=suppliers.filter(f=>!n||norm(supplierName(f)).includes(n)).sort((a,b)=>supplierName(a).localeCompare(supplierName(b),"fr")).slice(0,50);box.innerHTML=list.length?list.map(f=>`<div class="supplier-option" data-supplier-id="${esc(f.id)}"><strong>${esc(supplierName(f))}</strong><span>${esc(f.nb_articles||0)} article(s)</span></div>`).join(""):'<div class="supplier-option"><strong>Aucun fournisseur trouvé</strong></div>';box.classList.add("show");box.querySelectorAll("[data-supplier-id]").forEach(el=>el.onclick=()=>chooseSupplier(el.dataset.supplierId,true))}

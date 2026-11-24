@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 
-<html lang="fr"><head>
+<html lang="fr"><head><script>
+(()=>{const k="braconnier_portal_token_v3";sessionStorage.removeItem(k);sessionStorage.removeItem("braconnier_api_access_password_v1");const home=new URL("index.html",location.href).href;function check(){if(!localStorage.getItem(k)&&location.href!==home)location.replace(home)}window.addEventListener("storage",e=>{if((e.key===k&&!e.newValue)||e.key===null){location.replace(home)}});window.addEventListener("pageshow",e=>{if(e.persisted)check()});})();
+</script>
 <script id="portal-access-guard">
 (function(){
- const key="braconnier_portal_token_v3", token=sessionStorage.getItem(key);
+ const key="braconnier_portal_token_v3", token=localStorage.getItem(key);
  const home=new URL("index.html",location.href).href;
  document.documentElement.style.visibility="hidden";
  if(!token){location.replace(home);return;}
@@ -12,7 +14,7 @@
   if(document.body)show();else document.addEventListener("DOMContentLoaded",show,{once:true});
  }
  fetch("https://braconnier-auth.sebastien-025.workers.dev/auth/check",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(r=>{
-  if(r.status===401||r.status===403){sessionStorage.removeItem(key);location.replace(home);return;}
+  if(r.status===401||r.status===403){localStorage.removeItem(key);location.replace(home);return;}
   if(!r.ok){unavailable();return;}
   document.documentElement.style.visibility="";
  }).catch(unavailable);
@@ -97,15 +99,15 @@ body{margin:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;color:#1
  const tokenKey="braconnier_portal_token_v3",logoutKey="braconnier_portal_logout";
  const home=new URL("index.html",window.location.href).href;
  window.portalLogout=function(){
-  sessionStorage.removeItem(tokenKey);
+  localStorage.removeItem(tokenKey);
   try{localStorage.setItem(logoutKey,Date.now()+":"+Math.random())}catch{}
   window.location.replace(home);
  };
  window.addEventListener("storage",event=>{
-  if(event.key===logoutKey){sessionStorage.removeItem(tokenKey);window.location.replace(home)}
+  if(event.key===logoutKey){localStorage.removeItem(tokenKey);window.location.replace(home)}
  });
  window.addEventListener("pageshow",event=>{
-  if(event.persisted&&!sessionStorage.getItem(tokenKey))window.location.replace(home);
+  if(event.persisted&&!localStorage.getItem(tokenKey))window.location.replace(home);
  });
 })();
 
@@ -459,23 +461,23 @@ const AUTH_API="https://braconnier-auth.sebastien-025.workers.dev";
 const PORTAL_TOKEN_KEY="braconnier_portal_token_v3";
 
 async function requirePortalSession(){
-  const token=sessionStorage.getItem(PORTAL_TOKEN_KEY);
+  const token=localStorage.getItem(PORTAL_TOKEN_KEY);
   if(!token){window.location.replace("index.html");return false;}
   try{
     const r=await fetch(AUTH_API+"/auth/check",{headers:{"Authorization":"Bearer "+token}});
-    if(r.status===401||r.status===403){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return false;}
+    if(r.status===401||r.status===403){localStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return false;}
     return r.ok;
   }catch(e){return false;}
 }
 requirePortalSession();
 
 async function showCredentials(i){
-  const token=sessionStorage.getItem(PORTAL_TOKEN_KEY);
+  const token=localStorage.getItem(PORTAL_TOKEN_KEY);
   if(!token){window.location.replace("index.html");return;}
   try{
     const r=await fetch(AUTH_API+"/credentials/"+i,{headers:{"Authorization":"Bearer "+token}});
     const c=await r.json().catch(()=>({}));
-    if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+    if(r.status===401){localStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
     if(!r.ok)throw new Error(c.error||"Accès impossible.");
     alert(`Fournisseur: ${c.n}
 Identifiant: ${c.i}
@@ -504,7 +506,7 @@ const CATEGORY_META={
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function initials(name){return String(name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();}
 function fallbackLogo(url){try{return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(url).hostname)}&sz=128`;}catch{return "";}}
-function authHeaders(jsonBody=false){const t=sessionStorage.getItem(PORTAL_TOKEN_KEY);const h={"Authorization":"Bearer "+t,"X-Enseigne":"outilsud"};if(jsonBody)h["Content-Type"]="application/json";return h;}
+function authHeaders(jsonBody=false){const t=localStorage.getItem(PORTAL_TOKEN_KEY);const h={"Authorization":"Bearer "+t,"X-Enseigne":"outilsud"};if(jsonBody)h["Content-Type"]="application/json";return h;}
 
 let customCategories=[];
 async function loadCategories(){
@@ -655,7 +657,7 @@ async function saveSupplier(e){
    if(r.status===404||r.status===405){r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id),{method:"PATCH",headers:authHeaders(true),body:JSON.stringify(body)});}
   }else r=await fetch(AUTH_API+"/suppliers",{method:"POST",headers:authHeaders(true),body:JSON.stringify(body)});
   data=await r.json().catch(()=>({}));
-  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(r.status===401){localStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(data.error||(id?"La modification n’est pas encore acceptée par l’API.":"Impossible d’enregistrer le fournisseur."));
   if(legacyName) rememberLegacy(legacyName,data.id||data.supplier?.id||data.supplier_id||"1");
   resetSupplierForm();closeSupplierModal();await loadDynamicSuppliers();alert((id||legacyName)?"Fournisseur modifié.":"Fournisseur ajouté.");
@@ -667,7 +669,7 @@ async function showDynamicCredentials(id){
  try{
   const r=await fetch(AUTH_API+"/suppliers/"+encodeURIComponent(id)+"/credentials",{headers:authHeaders()});
   const c=await r.json().catch(()=>({}));
-  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(r.status===401){localStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(c.error||"Accès impossible.");
   alert(`Fournisseur: ${c.n}\nIdentifiant: ${c.i}\nMot de passe: ${c.p}`);
  }catch(err){alert(err.message||"Impossible de récupérer les accès.");}
@@ -678,7 +680,7 @@ async function loadDynamicSuppliers(){
  try{
   const r=await fetch(AUTH_API+"/suppliers",{headers:authHeaders()});
   const data=await r.json().catch(()=>({}));
-  if(r.status===401){sessionStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
+  if(r.status===401){localStorage.removeItem(PORTAL_TOKEN_KEY);window.location.replace("index.html");return;}
   if(!r.ok)throw new Error(data.error||"Chargement impossible.");
   dynamicSupplierCache=data.suppliers||[];
   
